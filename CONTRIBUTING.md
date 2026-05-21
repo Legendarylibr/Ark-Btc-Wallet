@@ -1,8 +1,8 @@
 # Contributing
 
-Thanks for your interest in Ark Wallet.
+Thanks for helping improve [Ark BTC Wallet](https://github.com/Legendarylibr/Ark-Btc-Wallet).
 
-## Development setup
+## Setup
 
 ```bash
 cp .env.example .env.local
@@ -10,9 +10,10 @@ npm install
 npm run dev
 ```
 
-Open [http://127.0.0.1:3000](http://127.0.0.1:3000). For **barkd mode**, install [Bark + barkd](https://second.tech/docs/barkd/install) and run `barkd` on signet before using Pay / Request.
+- **barkd mode:** install [Bark + barkd](https://second.tech/docs/barkd/install), run `barkd` on signet. See [docs/getting-started.md](docs/getting-started.md).
+- **SDK mode:** `npm run vendor:bark-wasm && npm run build:bark-wasm`, then `NEXT_PUBLIC_WALLET_BACKEND=sdk` in `.env.local`. See [docs/sdk-mode.md](docs/sdk-mode.md).
 
-## Checks before a PR
+## Before you open a PR
 
 ```bash
 npm run lint
@@ -20,21 +21,37 @@ npm test
 npm run build
 ```
 
-## SDK / WASM (optional)
+CI runs the same checks on GitHub Actions.
 
-```bash
-npm run vendor:bark-wasm
-npm run build:bark-wasm
+## Project layout
+
+```
+src/
+  app/              Next.js routes (pages + /api/*)
+  components/       WalletApp, SdkWalletApp, sheets, onboarding
+  lib/              barkd client, crypto, WebAuthn (server), API guards
+  sdk/              Browser WASM wallet, passkey vault, SDK WebAuthn
+  store/            Zustand (crypto, wallet, sdk-wallet)
+tests/unit/         Vitest — prefer tests for security-sensitive logic
+docs/               User and operator guides
 ```
 
-Set `NEXT_PUBLIC_WALLET_BACKEND=sdk` in `.env.local`. See [SECURITY.md](SECURITY.md) — SDK mode is a different trust model, not a drop-in for barkd.
+| Change type | Also update |
+|-------------|-------------|
+| Threat model / auth behavior | [SECURITY.md](SECURITY.md) |
+| Env vars or deploy | [docs/configuration.md](docs/configuration.md), [.env.example](.env.example) |
+| User-facing flows | [docs/getting-started.md](docs/getting-started.md) or [docs/troubleshooting.md](docs/troubleshooting.md) |
+
+## Code style
+
+- Match existing patterns: minimal scope, no drive-by refactors.
+- API routes: use `withCryptoGuard` / `withSensitiveCryptoGuard` and `parseJsonBody`.
+- Security-sensitive helpers belong in `src/lib/crypto/` or `src/lib/webauthn/`.
 
 ## Security issues
 
-Do not open public issues for exploitable vulnerabilities. Describe the issue privately to the maintainers (email or security contact listed in the repository when available).
+Do **not** file public issues for exploitable vulnerabilities. Report privately to the maintainers (GitHub private security advisory or contact on the repo profile when listed).
 
-## Scope
+## Questions
 
-- Keep changes focused; match existing patterns in `src/`.
-- Update [SECURITY.md](SECURITY.md) when behavior or threat model changes.
-- Add or extend tests in `tests/` for security-sensitive logic.
+Open a [GitHub issue](https://github.com/Legendarylibr/Ark-Btc-Wallet/issues) for bugs and feature requests. Check [docs/troubleshooting.md](docs/troubleshooting.md) first.

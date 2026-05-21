@@ -1,5 +1,7 @@
 # Security
 
+Operator setup and env vars: [docs/configuration.md](docs/configuration.md). User-facing flows: [docs/getting-started.md](docs/getting-started.md).
+
 ## Trust boundaries
 
 ### barkd mode (recommended)
