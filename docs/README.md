@@ -4,6 +4,7 @@ Guides for [Ark BTC Wallet](https://github.com/Legendarylibr/Ark-Btc-Wallet).
 
 | Guide | Description |
 |-------|-------------|
+| [Platforms](platforms.md) | Linux, macOS, and Windows requirements |
 | [Getting started](getting-started.md) | Install barkd, create a signet wallet, first unlock & payment |
 | [SDK mode](sdk-mode.md) | Browser WASM backend, passkeys, recovery passphrase |
 | [Architecture](architecture.md) | How barkd vs SDK paths work; API and crypto layers |

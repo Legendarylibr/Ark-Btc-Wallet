@@ -47,7 +47,7 @@ Hardware gates the **web UI**, not barkd itself — set `BARKD_AUTH_TOKEN` when 
 
 ## barkd bypass (out of scope for this app)
 
-Any local process can call `http://127.0.0.1:3535` while barkd runs. Mitigate with loopback-only barkd, `scripts/lockdown-local.sh`, and stopping barkd when idle. For recovery, use `bark` / barkd CLI directly.
+Any local process can call `http://127.0.0.1:3535` while barkd runs. Mitigate with loopback-only barkd, `npm run lockdown:local`, and stopping barkd when idle. For recovery, use `bark` / barkd CLI directly.
 
 ## Data on disk
 

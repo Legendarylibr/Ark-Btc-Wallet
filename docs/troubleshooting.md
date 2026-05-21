@@ -77,10 +77,11 @@ Tests use a temp `WALLET_DATA_DIR` and `SESSION_SECRET`. Run `npm test` from rep
 
 ### Port 3000 in use
 
-```bash
-lsof -i :3000
-# stop the other process or change Next port (not recommended — docs assume 3000)
-```
+**macOS / Linux:** `lsof -i :3000`
+
+**Windows:** `netstat -ano | findstr :3000`
+
+Stop the other process (docs assume port 3000).
 
 ## Security reminders
 

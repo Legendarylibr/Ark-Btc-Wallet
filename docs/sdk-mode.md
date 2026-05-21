@@ -10,11 +10,11 @@ NEXT_PUBLIC_WALLET_BACKEND=sdk
 
 ## Build WASM (one-time)
 
-Requires **Rust**, **wasm-pack**, and network access to clone bindings:
+Requires **Rust**, **wasm-pack**, and **Git** (all platforms — see [platforms.md](platforms.md)):
 
 ```bash
-npm run vendor:bark-wasm   # clones ark-bitcoin/bark-ffi-bindings (wasm branch)
-npm run build:bark-wasm    # wasm-pack build → packages/bark-wasm/pkg/
+npm run vendor:bark-wasm   # Node script — clones bindings (no Bash required)
+npm run build:bark-wasm    # wasm-pack → packages/bark-wasm/pkg/
 npm install
 ```
 

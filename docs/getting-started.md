@@ -46,7 +46,7 @@ npm install
 npm run dev
 ```
 
-Open **http://127.0.0.1:3000** (the dev server only listens on loopback).
+Open **http://127.0.0.1:3000** (the dev server only listens on loopback). Use this URL consistently so WebAuthn/passkeys stay valid (see [platforms.md](platforms.md)).
 
 ## 4. First-time setup in the app
 

@@ -23,8 +23,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "vendor:bark-wasm": "bash scripts/vendor-bark-wasm.sh",
-    "build:bark-wasm": "bash scripts/build-bark-wasm.sh"
+    "vendor:bark-wasm": "node scripts/vendor-bark-wasm.mjs",
+    "build:bark-wasm": "node scripts/build-bark-wasm.mjs",
+    "lockdown:local": "node scripts/lockdown-local.mjs"
   },
   "optionalDependencies": {
     "@secondts/bark-wasm": "file:packages/bark-wasm"
