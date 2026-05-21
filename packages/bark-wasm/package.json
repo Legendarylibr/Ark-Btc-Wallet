@@ -1,0 +1,30 @@
+{
+  "name": "@secondts/bark-wasm",
+  "version": "0.2.0-beta.1",
+  "description": "WASM bindings for the Bark Bitcoin protocol (Ark) — browser bundler build",
+  "license": "MIT OR Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.com/ark-bitcoin/bark-ffi-bindings",
+    "directory": "wasm"
+  },
+  "files": [
+    "pkg/bundler",
+    "pkg/nodejs"
+  ],
+  "exports": {
+    ".": {
+      "require": "./pkg/nodejs/bark.js",
+      "import": "./pkg/bundler/bark.js",
+      "types": "./pkg/bundler/bark.d.ts"
+    }
+  },
+  "main": "./pkg/nodejs/bark.js",
+  "module": "./pkg/bundler/bark.js",
+  "types": "./pkg/bundler/bark.d.ts",
+  "scripts": {
+    "build": "./generate-bindings.sh",
+    "build:web": "wasm-pack build ./rust --target bundler --out-dir ../pkg/bundler --out-name bark --release",
+    "build:node": "wasm-pack build ./rust --target nodejs --out-dir ../pkg/nodejs --out-name bark --release"
+  }
+}

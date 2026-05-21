@@ -1,0 +1,151 @@
+"use client";
+
+import {
+  startAuthentication,
+  startRegistration,
+} from "@simplewebauthn/browser";
+import type {
+  AuthenticationResponseJSON,
+  PublicKeyCredentialCreationOptionsJSON,
+  PublicKeyCredentialRequestOptionsJSON,
+  RegistrationResponseJSON,
+} from "@simplewebauthn/browser";
+import type { UnlockedIdentity } from "@/lib/crypto/vault";
+import { arkClientHeaders } from "@/lib/ark-client";
+import { bytesToBase64, sign } from "@/lib/crypto/ed25519";
+import { webauthnSetupMessage } from "@/lib/crypto/challenges";
+import {
+  HARDWARE_AUTH_HEADER,
+  PENDING_OP_HEADER,
+  SETUP_TOKEN_HEADER,
+} from "@/lib/webauthn/constants";
+import { unlockVault, loadVaultFromStorage, zeroize } from "@/lib/crypto/vault";
+import type { PendingOpType } from "@/lib/webauthn/pending-op";
+
+async function apiJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, {
+    ...init,
+    credentials: "same-origin",
+    headers: {
+      ...arkClientHeaders(),
+      ...init?.headers,
+    },
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(
+      (data as { error?: string }).error ?? "Hardware request failed",
+    );
+  }
+  return data as T;
+}
+
+export async function fetchHardwareStatus(): Promise<{ registered: boolean }> {
+  return apiJson("/api/auth/webauthn/status");
+}
+
+async function obtainSetupToken(identity: UnlockedIdentity): Promise<string> {
+  const { challenge } = await apiJson<{ challenge: string }>(
+    "/api/auth/webauthn/setup-challenge",
+  );
+  const nonce = crypto.randomUUID();
+  const timestamp = Date.now();
+  const message = webauthnSetupMessage(challenge);
+  const signature = await sign(message, identity.privateKey);
+
+  const { setupToken } = await apiJson<{ setupToken: string }>(
+    "/api/auth/webauthn/setup-proof",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        publicKey: bytesToBase64(identity.publicKey),
+        challenge,
+        signature: bytesToBase64(signature),
+        timestamp,
+        nonce,
+      }),
+    },
+  );
+
+  return setupToken;
+}
+
+/** Register YubiKey / Touch ID — requires passphrase to prove vault ownership */
+export async function registerHardwareDevice(passphrase: string): Promise<void> {
+  const vault = await loadVaultFromStorage();
+  if (!vault) throw new Error("No vault — set up a passphrase first");
+
+  const identity = await unlockVault(passphrase, vault);
+  try {
+    const setupToken = await obtainSetupToken(identity);
+
+    const { options, challenge } = await apiJson<{
+      options: PublicKeyCredentialCreationOptionsJSON;
+      challenge: string;
+    }>("/api/auth/webauthn/register-options", {
+      headers: { [SETUP_TOKEN_HEADER]: setupToken },
+    });
+
+    const attResp: RegistrationResponseJSON = await startRegistration({
+      optionsJSON: options,
+    });
+
+    await apiJson("/api/auth/webauthn/register-verify", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        [SETUP_TOKEN_HEADER]: setupToken,
+      },
+      body: JSON.stringify({ response: attResp, challenge }),
+    });
+  } finally {
+    zeroize(identity.privateKey);
+  }
+}
+
+export async function createPendingOp(
+  type: PendingOpType,
+  bodyHash: string,
+  signedFetchFn: (
+    path: string,
+    init: RequestInit,
+  ) => Promise<Response>,
+): Promise<string> {
+  const res = await signedFetchFn("/api/auth/webauthn/pending-op", {
+    method: "POST",
+    body: JSON.stringify({ type, bodyHash }),
+  });
+  const data = (await res.json()) as { opId?: string; error?: string };
+  if (!res.ok) {
+    throw new Error(data.error ?? "Could not start secured operation");
+  }
+  if (!data.opId) throw new Error("Missing operation id");
+  return data.opId;
+}
+
+export async function authenticateWithHardware(opId: string): Promise<{
+  response: AuthenticationResponseJSON;
+  challenge: string;
+  opId: string;
+}> {
+  const { options, challenge } = await apiJson<{
+    options: PublicKeyCredentialRequestOptionsJSON;
+    challenge: string;
+  }>(`/api/auth/webauthn/auth-options?opId=${encodeURIComponent(opId)}`);
+
+  const authResp = await startAuthentication({ optionsJSON: options });
+  return { response: authResp, challenge, opId };
+}
+
+/** Payload for x-wallet-hardware-auth + x-wallet-pending-op headers */
+export async function hardwareAuthHeaders(
+  opId: string,
+): Promise<Record<string, string>> {
+  const { response, challenge } = await authenticateWithHardware(opId);
+  return {
+    [HARDWARE_AUTH_HEADER]: JSON.stringify({ response, challenge, opId }),
+    [PENDING_OP_HEADER]: opId,
+  };
+}
+

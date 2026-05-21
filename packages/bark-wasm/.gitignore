@@ -1,0 +1,19 @@
+# Keep pre-built WASM packages (committed for distribution)
+# DO NOT add pkg/ here - we want to commit these!
+
+# Rust build artifacts
+rust/target/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/

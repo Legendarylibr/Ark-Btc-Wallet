@@ -1,0 +1,2 @@
+# Mark WASM files as binary
+*.wasm binary

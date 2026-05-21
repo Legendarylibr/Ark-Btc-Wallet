@@ -1,0 +1,63 @@
+{
+  "name": "ark-wallet",
+  "version": "0.1.0",
+  "description": "Ark-only signet wallet UI with barkd or browser WASM backends",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Legendarylibr/Ark-Btc-Wallet.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Legendarylibr/Ark-Btc-Wallet/issues"
+  },
+  "homepage": "https://github.com/Legendarylibr/Ark-Btc-Wallet#readme",
+  "keywords": ["ark", "bitcoin", "wallet", "barkd", "signet", "webauthn"],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "next dev --turbopack -H 127.0.0.1",
+    "build": "next build",
+    "start": "next start -H 127.0.0.1",
+    "lint": "eslint src",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "vendor:bark-wasm": "bash scripts/vendor-bark-wasm.sh",
+    "build:bark-wasm": "bash scripts/build-bark-wasm.sh"
+  },
+  "optionalDependencies": {
+    "@secondts/bark-wasm": "file:packages/bark-wasm"
+  },
+  "dependencies": {
+    "@noble/ed25519": "^2.3.0",
+    "@noble/hashes": "^1.8.0",
+    "@scure/base": "^2.2.0",
+    "@simplewebauthn/browser": "^13.3.0",
+    "@simplewebauthn/server": "^13.3.0",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.15.0",
+    "lucide-react": "^0.511.0",
+    "next": "^15.3.3",
+    "qrcode.react": "^4.2.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "tailwind-merge": "^3.3.0",
+    "zustand": "^5.0.5"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.1",
+    "@tailwindcss/postcss": "^4.1.8",
+    "@types/node": "^22.15.21",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.5",
+    "@vitest/coverage-v8": "^3.2.4",
+    "eslint": "^9.27.0",
+    "eslint-config-next": "^15.3.3",
+    "happy-dom": "^17.4.4",
+    "tailwindcss": "^4.1.8",
+    "tsx": "^4.22.3",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  }
+}

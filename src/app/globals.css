@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+:root {
+  --cash-green: #00d54b;
+  --cash-green-dark: #00b840;
+  --cash-black: #0a0a0a;
+  --cash-gray: #1c1c1e;
+  --cash-gray-2: #2c2c2e;
+  --cash-gray-3: #3a3a3c;
+  --cash-text: #ffffff;
+  --cash-muted: #8e8e93;
+}
+
+@theme inline {
+  --color-cash-green: var(--cash-green);
+  --color-cash-green-dark: var(--cash-green-dark);
+  --color-cash-black: var(--cash-black);
+  --color-cash-gray: var(--cash-gray);
+  --color-cash-gray-2: var(--cash-gray-2);
+  --color-cash-gray-3: var(--cash-gray-3);
+  --color-cash-muted: var(--cash-muted);
+  --font-sans: var(--font-geist-sans);
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  height: 100%;
+  background: var(--cash-black);
+  color: var(--cash-text);
+  overscroll-behavior: none;
+}
+
+body {
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+}
+
+/* Hide scrollbar but keep scroll */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.6;
+  }
+}
+
+.pulse-ring {
+  animation: pulse-ring 2s ease-in-out infinite;
+}
