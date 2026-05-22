@@ -1,30 +1,87 @@
 # Ark BTC Wallet
 
-Cash App–style wallet for **Ark-only** signet payments (`ark1…` addresses). Self-custodial keys live in **[barkd](https://second.tech/docs/barkd)** on your machine (recommended), or optionally in the browser via **[Bark WASM](https://gitlab.com/ark-bitcoin/bark-ffi-bindings/-/tree/wasm)** (experimental).
+A local, Cash App–style wallet for **Ark-only signet** payments. Send and receive using `ark1…` addresses with instant settlement on the [2nd signet](https://signet.2nd.dev/) network.
+
+**Who is this for?** Developers and testers who want a simple UI on top of [barkd](https://second.tech/docs/barkd) (recommended), or an experimental in-browser wallet via [Bark WASM](https://gitlab.com/ark-bitcoin/bark-ffi-bindings/-/tree/wasm).
 
 [![CI](https://github.com/Legendarylibr/Ark-Btc-Wallet/actions/workflows/ci.yml/badge.svg)](https://github.com/Legendarylibr/Ark-Btc-Wallet/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-## Features
+---
 
-- Pay and request with **Ark addresses** — instant arkoor settlement on signet
-- **barkd mode** — mnemonic stays in CLI; UI uses passphrase + **WebAuthn** (Touch ID, YubiKey, Windows Hello) + Ed25519-signed API
-- **SDK mode** — optional in-browser wallet with passkey (PRF) unlock and recovery passphrase
-- Auto-sync balance and activity; **Secure** flow for VTXO refresh after receives
-- Loopback-only API hardening, session binding, replay-safe nonces
+## What you get
 
-## Startup by OS
+- **Pay & Request** — send signet sats to any `ark1…` address; show a receive address for incoming payments
+- **Live balance & history** — auto-sync with barkd; activity list in the UI
+- **Secure** — refresh received VTXOs after someone pays you (recommended after incoming funds)
+- **Strong local security (barkd mode)** — passphrase + security key (Touch ID, Windows Hello, YubiKey) + signed API on loopback only
+- **No cloud account** — runs on your machine at `http://127.0.0.1:3000`; keys stay in barkd unless you enable SDK mode
 
-Install [Bark + barkd](https://second.tech/docs/barkd/install) for your platform, then run the wallet app. **Node.js 20+** required everywhere.
+> **Signet only** — this is test money, not mainnet. Get coins from the [signet faucet](https://signet.2nd.dev/).
 
-### macOS
+---
+
+## How it works (two modes)
+
+| | **barkd (default, recommended)** | **SDK (experimental)** |
+|---|----------------------------------|----------------------|
+| Where keys live | **barkd** on your computer (`127.0.0.1:3535`) | Browser (WASM + encrypted storage) |
+| Recovery phrase in UI? | **No** — created only in `bark create` | Yes (shown once at setup; back it up) |
+| Security key | Verified on the **server** | Verified in the **browser** only |
+| Best for | Day-to-day signet testing with real barkd | Trying WASM without installing barkd |
+
+Use **barkd mode** unless you have a specific reason to use SDK. SDK has a different trust model — read [SECURITY.md](SECURITY.md) before using it.
+
+---
+
+## Before you start
+
+| Requirement | Notes |
+|-------------|--------|
+| **Node.js 20+** | [nodejs.org](https://nodejs.org) — for the wallet UI |
+| **Bark CLI + barkd** | [Install guide](https://second.tech/docs/barkd/install) — holds your signet wallet |
+| **Modern browser** | Chrome, Firefox, Edge, or Safari — for WebAuthn |
+| **Security key (optional)** | Touch ID, Windows Hello, or a FIDO2 key (e.g. YubiKey) |
+
+The wallet UI **only listens on loopback** (`127.0.0.1`). Do not expose ports `3000` or `3535` to your LAN or the internet.
+
+---
+
+## Quick start (about 10 minutes)
+
+### Step 1 — Create a signet wallet (terminal, one time)
+
+Your **bitcoin recovery phrase is created here**, not in the browser. Write it down and store it safely.
 
 ```bash
-# 1. Wallet + daemon (Terminal)
-bark create --signet --ark ark.signet.2nd.dev --esplora esplora.signet.2nd.dev
-barkd
+bark create --signet \
+  --ark ark.signet.2nd.dev \
+  --esplora esplora.signet.2nd.dev
+```
 
-# 2. Ark BTC Wallet (new Terminal tab)
+### Step 2 — Start barkd
+
+Keep this running in a terminal while you use the wallet:
+
+```bash
+barkd
+```
+
+Default API: `http://127.0.0.1:3535`. Use loopback only — do not bind barkd to `0.0.0.0`.
+
+Check it is up (optional):
+
+```bash
+curl -s http://127.0.0.1:3535/api/v1/wallet
+```
+
+You should see a wallet `fingerprint` in the JSON response.
+
+### Step 3 — Install and run Ark BTC Wallet
+
+**macOS / Linux:**
+
+```bash
 git clone https://github.com/Legendarylibr/Ark-Btc-Wallet.git
 cd Ark-Btc-Wallet
 cp .env.example .env.local
@@ -32,37 +89,7 @@ npm install
 npm run dev
 ```
 
-Open [http://127.0.0.1:3000](http://127.0.0.1:3000). Use **Touch ID** or a **YubiKey** when prompted.
-
-### Linux
-
-```bash
-# 1. barkd (follow upstream install for your distro)
-bark create --signet --ark ark.signet.2nd.dev --esplora esplora.signet.2nd.dev
-barkd
-
-# 2. Ark BTC Wallet
-git clone https://github.com/Legendarylibr/Ark-Btc-Wallet.git
-cd Ark-Btc-Wallet
-cp .env.example .env.local
-npm install
-npm run dev
-```
-
-Open [http://127.0.0.1:3000](http://127.0.0.1:3000). Prefer **Chrome** or **Firefox** for WebAuthn; **YubiKey** works on all distros.
-
-### Windows
-
-**Option A — barkd on Windows** (if you have a native build from [Bark install docs](https://second.tech/docs/barkd/install)):
-
-```powershell
-bark create --signet --ark ark.signet.2nd.dev --esplora esplora.signet.2nd.dev
-barkd
-```
-
-**Option B — barkd in WSL2** (common): run `bark create` and `barkd` inside Ubuntu/WSL; keep `BARKD_URL=http://127.0.0.1:3535` in `.env.local` — Windows reaches WSL on loopback.
-
-**Wallet app** (PowerShell or cmd):
+**Windows (PowerShell):**
 
 ```powershell
 git clone https://github.com/Legendarylibr/Ark-Btc-Wallet.git
@@ -72,56 +99,133 @@ npm install
 npm run dev
 ```
 
-Open [http://127.0.0.1:3000](http://127.0.0.1:3000). Use **Windows Hello** or a **YubiKey**.
+Open **[http://127.0.0.1:3000](http://127.0.0.1:3000)** in your browser. Prefer this exact URL (not only `localhost`) so passkeys and WebAuthn stay consistent — see [docs/platforms.md](docs/platforms.md).
 
-### First run (all platforms)
+### Step 4 — Set up the app (first time only)
 
-1. Set a **passphrase** (UI signing key — not your bitcoin mnemonic).
-2. **Register hardware** → **Unlock**.
-3. **Request** an `ark1…` address → [signet faucet](https://signet.2nd.dev/) for test sats.
+The UI walks you through these screens in order:
 
-More detail: [docs/getting-started.md](docs/getting-started.md) · [docs/platforms.md](docs/platforms.md)
+1. **Onboarding** — confirms barkd is reachable; tap *I started barkd — continue*.
+2. **Passphrase** — protects your **UI signing key** (encrypted in the browser). This is **not** your bitcoin mnemonic from `bark create`.
+3. **Register hardware** — enroll Touch ID, Windows Hello, or a YubiKey.
+4. **Unlock** — enter passphrase and approve with your security key.
 
-**SDK mode (no barkd):** [docs/sdk-mode.md](docs/sdk-mode.md)
+The first machine to unlock **pairs** with this barkd wallet. Another computer with a different signing key will be blocked until you reset pairing ([troubleshooting](docs/troubleshooting.md)).
+
+### Step 5 — Get test coins
+
+1. Tap **Request** and copy your `ark1…` address.
+2. Paste it into the [signet faucet](https://signet.2nd.dev/) (GitHub login).
+3. Wait for sync — balance and activity should update automatically.
+
+### Step 6 — Use the wallet
+
+| Button | What it does |
+|--------|----------------|
+| **Pay** | Send to an `ark1…` address. Requires a fresh security-key tap. |
+| **Request** | Show your receive address. |
+| **Secure** | Refresh incoming VTXOs after you receive funds. |
+| **Lock** | End session and clear the signing key from memory. |
+
+---
+
+## Platform notes
+
+### macOS
+
+Install barkd per [upstream docs](https://second.tech/docs/barkd/install), then run the commands in Quick start. **Touch ID** or a **YubiKey** works for WebAuthn.
+
+### Linux
+
+Same flow as macOS. **Chrome** or **Firefox** recommended; **YubiKey** works on all distros.
+
+### Windows
+
+**Option A** — Native barkd (if you have a Windows build from the install guide):
+
+```powershell
+bark create --signet --ark ark.signet.2nd.dev --esplora esplora.signet.2nd.dev
+barkd
+```
+
+**Option B** — barkd in **WSL2** (common): run `bark create` and `barkd` inside Ubuntu/WSL. Keep `BARKD_URL=http://127.0.0.1:3535` in `.env.local` — the Windows browser reaches WSL on loopback.
+
+Use **Windows Hello** or a **YubiKey** when the app asks for your security key.
+
+More detail: [docs/platforms.md](docs/platforms.md)
+
+---
+
+## SDK mode (no barkd)
+
+For a browser-only wallet (mnemonic in the app, passkey unlock):
+
+1. Build WASM: [docs/sdk-mode.md](docs/sdk-mode.md) (`npm run vendor:bark-wasm` and `npm run build:bark-wasm`).
+2. In `.env.local` set `NEXT_PUBLIC_WALLET_BACKEND=sdk`.
+3. Restart `npm run dev`.
+
+Treat SDK as **experimental** — not a drop-in replacement for barkd security.
+
+---
+
+## Something went wrong?
+
+| Symptom | Try |
+|---------|-----|
+| “Start barkd…” on open | Run `barkd` in a terminal; check `curl` above. |
+| WebAuthn / passkey fails | Use `http://127.0.0.1:3000` consistently; try another browser. |
+| Unlock rejected / pairing error | First device wins pairing; see [docs/troubleshooting.md](docs/troubleshooting.md). |
+| Balance not updating | Tap refresh; run **Secure** after a receive. |
+
+Full list: [docs/troubleshooting.md](docs/troubleshooting.md)
+
+---
+
+## Security (plain language)
+
+- **barkd holds your coins** — any program on your PC can talk to `127.0.0.1:3535` while barkd runs. Stop barkd when idle; keep it on loopback.
+- **The UI adds a second lock** — passphrase, signed requests, and a security key for pay / secure / balance reads.
+- **No telemetry** — the app does not phone home with keys or transaction data.
+- **Production** — set a strong `SESSION_SECRET` and `BARKD_AUTH_TOKEN`; see [docs/configuration.md](docs/configuration.md) and [SECURITY.md](SECURITY.md).
+- **Optional strict retention** — `ARK_ZERO_RETENTION=true` shortens sessions and purges ephemeral server data; see [docs/zero-trust-retention.md](docs/zero-trust-retention.md).
+
+---
 
 ## Documentation
 
-| Doc | Contents |
-|-----|----------|
-| [docs/platforms.md](docs/platforms.md) | Linux / macOS / Windows |
-| [docs/getting-started.md](docs/getting-started.md) | Full barkd setup, first unlock, Pay / Secure |
-| [docs/sdk-mode.md](docs/sdk-mode.md) | WASM build, passkeys, recovery |
-| [docs/architecture.md](docs/architecture.md) | barkd vs SDK paths, signing layers, file map |
-| [docs/configuration.md](docs/configuration.md) | Environment variables, production checklist |
-| [docs/troubleshooting.md](docs/troubleshooting.md) | Common errors |
-| [SECURITY.md](SECURITY.md) | Trust model and incident response |
-| [docs/zero-trust-retention.md](docs/zero-trust-retention.md) | Zero trust verification chain and data retention |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Dev workflow and project layout |
+| Doc | When to read it |
+|-----|-----------------|
+| [docs/getting-started.md](docs/getting-started.md) | Full barkd walkthrough, Pay / Secure details |
+| [docs/platforms.md](docs/platforms.md) | OS-specific tips, WebAuthn, WSL |
+| [docs/sdk-mode.md](docs/sdk-mode.md) | WASM build and passkey wallet |
+| [docs/configuration.md](docs/configuration.md) | All environment variables |
+| [docs/architecture.md](docs/architecture.md) | How signing and backends fit together |
+| [docs/troubleshooting.md](docs/troubleshooting.md) | Errors and fixes |
+| [SECURITY.md](SECURITY.md) | Trust boundaries and incident response |
+| [docs/zero-trust-retention.md](docs/zero-trust-retention.md) | Zero-trust and data retention mode |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Hacking on the repo |
 
-## Wallet backends
-
-| | **barkd (default)** | **SDK** |
-|---|---------------------|---------|
-| Keys | barkd `@ 127.0.0.1:3535` | Browser WASM + IndexedDB |
-| Mnemonic in UI | No | Yes (backup once) |
-| WebAuthn | Server-verified | Client-only |
-
-Do not treat SDK as a drop-in for barkd. See [SECURITY.md](SECURITY.md).
+---
 
 ## Development
 
 ```bash
+npm install
+npm run dev          # http://127.0.0.1:3000
+npm test             # unit tests
 npm run lint
-npm test
-npm run build
+npm run build        # production build (needs SESSION_SECRET + BARKD_AUTH_TOKEN in env)
 ```
 
 | Command | Purpose |
 |---------|---------|
-| `npm run dev` | Dev server (`127.0.0.1:3000`) |
-| `npm run build` / `start` | Production |
-| `npm test` | Vitest (95+ unit tests) |
+| `npm run dev` | Development server (Turbopack) |
+| `npm run build` / `npm run start` | Production build and server |
+| `npm test` | Vitest (100+ unit tests) |
+| `npm run lockdown:local` | Hints to lock down local ports |
+
+---
 
 ## License
 
-[MIT](LICENSE) 
+[MIT](LICENSE)
