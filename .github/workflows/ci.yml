@@ -28,6 +28,23 @@ jobs:
           SESSION_SECRET: ci-test-session-secret-min-32-chars-long
           BARKD_AUTH_TOKEN: ci-test-barkd-auth-token-placeholder
 
+  lean-fv:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm run fv:extract
+      - run: git diff --exit-code lean/ArkWallet/FvFixtures.lean
+      - uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: lean
+          auto-config: "false"
+          build: "true"
+          test: "false"
+          lint: "false"
+
   e2e:
     runs-on: ubuntu-latest
     steps:

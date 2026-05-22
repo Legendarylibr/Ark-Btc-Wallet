@@ -37,7 +37,10 @@
     "test:e2e:install": "playwright install chromium",
     "vendor:bark-wasm": "node scripts/vendor-bark-wasm.mjs",
     "build:bark-wasm": "node scripts/build-bark-wasm.mjs",
-    "lockdown:local": "node scripts/lockdown-local.mjs"
+    "lockdown:local": "node scripts/lockdown-local.mjs",
+    "fv:extract": "node scripts/fv-extract.mjs",
+    "fv:build": "cd lean && lake build",
+    "fv": "npm run fv:extract && npm run fv:build"
   },
   "optionalDependencies": {
     "@secondts/bark-wasm": "file:packages/bark-wasm"

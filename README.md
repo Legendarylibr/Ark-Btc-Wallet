@@ -202,6 +202,8 @@ Full list: [docs/troubleshooting.md](docs/troubleshooting.md)
 | [docs/architecture.md](docs/architecture.md) | How signing and backends fit together |
 | [docs/troubleshooting.md](docs/troubleshooting.md) | Errors and fixes |
 | [SECURITY.md](SECURITY.md) | Trust boundaries and incident response |
+| [docs/formal-verification-lean.md](docs/formal-verification-lean.md) | Lean 4 map and proof plan |
+| [lean/README.md](lean/README.md) | Formal verification (phase 0) |
 | [docs/zero-trust-retention.md](docs/zero-trust-retention.md) | Zero-trust and data retention mode |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Hacking on the repo |
 
@@ -213,6 +215,7 @@ Full list: [docs/troubleshooting.md](docs/troubleshooting.md)
 npm install
 npm run dev          # http://127.0.0.1:3000
 npm test             # unit tests
+npm run fv           # Lean formal verification (extract fixtures + lake build)
 npm run lint
 npm run build        # production build (needs SESSION_SECRET + BARKD_AUTH_TOKEN in env)
 ```
