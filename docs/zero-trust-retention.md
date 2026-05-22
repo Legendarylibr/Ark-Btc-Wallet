@@ -23,7 +23,7 @@ Every `/api/wallet/*` request is treated as untrusted until verified:
 - No analytics or third-party telemetry.
 - Server **ephemeral** files are TTL-bound and purged on startup and logout.
 
-### What we **must** keep (until you delete it)
+Local signet use, manage your own data
 
 | Data | Why |
 |------|-----|
