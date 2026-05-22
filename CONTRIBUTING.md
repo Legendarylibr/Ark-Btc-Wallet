@@ -34,7 +34,11 @@ src/
   store/            Zustand (crypto, wallet, sdk-wallet)
 tests/unit/         Vitest — prefer tests for security-sensitive logic
 docs/               User and operator guides
+packages/bark-ffi-bindings/  Large vendored FFI tree (only needed for `npm run build:bark-wasm`)
+packages/bark-wasm/          Built WASM output when SDK mode is enabled
 ```
+
+Cloning the full repo downloads `packages/bark-ffi-bindings/` (~large). You can skip it for barkd-only work; SDK builds use `npm run vendor:bark-wasm` when needed.
 
 | Change type | Also update |
 |-------------|-------------|
@@ -46,6 +50,7 @@ docs/               User and operator guides
 
 - Match existing patterns: minimal scope, no drive-by refactors.
 - API routes: use `withCryptoGuard` / `withSensitiveCryptoGuard` and `parseJsonBody`.
+- Add or extend `tests/unit/api-routes.test.ts` when changing route behavior (handlers are invoked directly with mocked `barkd`).
 - Security-sensitive helpers belong in `src/lib/crypto/` or `src/lib/webauthn/`.
 
 ## Security issues

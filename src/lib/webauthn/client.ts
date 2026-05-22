@@ -40,10 +40,6 @@ async function apiJson<T>(url: string, init?: RequestInit): Promise<T> {
   return data as T;
 }
 
-export async function fetchHardwareStatus(): Promise<{ registered: boolean }> {
-  return apiJson("/api/auth/webauthn/status");
-}
-
 async function obtainSetupToken(identity: UnlockedIdentity): Promise<string> {
   const { challenge } = await apiJson<{ challenge: string }>(
     "/api/auth/webauthn/setup-challenge",
