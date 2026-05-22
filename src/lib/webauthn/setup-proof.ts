@@ -7,6 +7,7 @@ import {
 import { isTimestampValid } from "@/lib/crypto/session-store";
 import { isValidNonceUuid } from "@/lib/crypto/nonce-format";
 import { claimNonce, REGISTER_NONCE_SCOPE } from "@/lib/crypto/nonce-store";
+import { constantTimeEqualString } from "@/lib/crypto/secure-compare";
 import { getPinnedPubkey } from "@/lib/crypto/pubkey-pin";
 import { hasWebAuthnCredential } from "./store";
 
@@ -78,7 +79,7 @@ export function assertSetupAllowedForFingerprint(
   }
 
   const pinned = getPinnedPubkey(fingerprint);
-  if (pinned && pinned !== publicKeyB64) {
+  if (pinned && !constantTimeEqualString(pinned, publicKeyB64)) {
     return {
       ok: false,
       error: "Signing key does not match this barkd wallet",

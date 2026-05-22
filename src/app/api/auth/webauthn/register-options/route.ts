@@ -7,7 +7,17 @@ import { getWebAuthnConfig } from "@/lib/webauthn/config";
 import { storeWebAuthnChallenge } from "@/lib/webauthn/challenges";
 import { validateSetupToken } from "@/lib/crypto/setup-token";
 import { SETUP_TOKEN_HEADER } from "@/lib/webauthn/constants";
+import {
+  SETUP_VAULT_PROOF_REQUIRED,
+} from "@/lib/webauthn/setup-gate";
 import { clientIp, rateLimit } from "@/lib/crypto/rate-limit";
+
+function vaultProofRequired(): NextResponse {
+  return NextResponse.json(
+    { error: SETUP_VAULT_PROOF_REQUIRED },
+    { status: 401 },
+  );
+}
 
 export async function GET(req: NextRequest) {
   const block = assertApiSecurity(req);
@@ -17,27 +27,22 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
+  const setupToken = req.headers.get(SETUP_TOKEN_HEADER);
+  if (!setupToken) {
+    return vaultProofRequired();
+  }
+
   try {
-    if (!(await barkd.walletExists())) {
-      return NextResponse.json({ error: "barkd wallet required" }, { status: 503 });
-    }
-    const { fingerprint } = await barkd.walletStatus();
-    if (!fingerprint) {
-      return NextResponse.json({ error: "No barkd fingerprint" }, { status: 503 });
+    let fingerprint: string;
+    try {
+      const { fingerprint: fp } = await barkd.walletStatus();
+      fingerprint = fp ?? "";
+    } catch {
+      return vaultProofRequired();
     }
 
-    const setup = validateSetupToken(
-      req.headers.get(SETUP_TOKEN_HEADER),
-      fingerprint,
-    );
-    if (!setup) {
-      return NextResponse.json(
-        {
-          error:
-            "Vault proof required — sign the setup challenge with your passphrase key first",
-        },
-        { status: 401 },
-      );
+    if (!fingerprint || !validateSetupToken(setupToken, fingerprint)) {
+      return vaultProofRequired();
     }
 
     if (hasWebAuthnCredential(fingerprint)) {
