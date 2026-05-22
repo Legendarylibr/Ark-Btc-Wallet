@@ -67,24 +67,35 @@ describe("API route handlers", () => {
     expect(body).toEqual({ ok: true });
   });
 
-  it("GET /api/wallet/ready reflects daemon and wallet", async () => {
-    useTempWalletDataDir();
-    const { barkd } = await import("@/lib/barkd");
+  it("GET /api/wallet/ready is deprecated", async () => {
     const { GET } = await import("@/app/api/wallet/ready/route");
     const res = await GET(apiRequest("/api/wallet/ready"));
+    expect(res.status).toBe(410);
+  });
+
+  it("POST /api/auth/barkd-ready requires pre-session signature", async () => {
+    useTempWalletDataDir();
+    const { generateKeypair, bytesToBase64 } = await import("@/lib/crypto/ed25519");
+    const { publicKey, privateKey } = await generateKeypair();
+    const publicKeyB64 = bytesToBase64(publicKey);
+    const body = "{}";
+    const headers = await buildSignedWalletHeaders({
+      method: "POST",
+      pathname: "/api/auth/barkd-ready",
+      body,
+      privateKey,
+      publicKeyB64,
+    });
+
+    const { barkd } = await import("@/lib/barkd");
+    const { POST } = await import("@/app/api/auth/barkd-ready/route");
+    const res = await POST(
+      apiRequest("/api/auth/barkd-ready", { method: "POST", headers, body }),
+    );
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ready: true });
     expect(barkd.daemonReachable).toHaveBeenCalled();
     expect(barkd.walletExists).toHaveBeenCalled();
-  });
-
-  it("GET /api/wallet/ready is false when no wallet file", async () => {
-    useTempWalletDataDir();
-    const { barkd } = await import("@/lib/barkd");
-    vi.mocked(barkd.walletExists).mockResolvedValueOnce(false);
-    const { GET } = await import("@/app/api/wallet/ready/route");
-    const res = await GET(apiRequest("/api/wallet/ready"));
-    expect(await res.json()).toEqual({ ready: false });
   });
 
   it("GET /api/auth/challenge issues challenge", async () => {

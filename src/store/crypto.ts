@@ -30,6 +30,7 @@ import {
   PENDING_OP_HEADER,
 } from "@/lib/webauthn/constants";
 import { preSessionSignedJson } from "@/lib/pre-session-fetch";
+import { signedFetch } from "@/lib/signed-fetch";
 
 import { clearClientEphemeralData } from "@/lib/client-ephemeral";
 import { WALLET_LOCK_TIMEOUT_MS } from "@/lib/security/constants";
@@ -140,9 +141,9 @@ export const useCryptoStore = create<CryptoState>((set, get) => ({
     unlockFailStreak = 0;
 
     try {
-      const readyRes = await fetch("/api/wallet/ready", {
-        credentials: "same-origin",
-        headers: arkClientHeaders(),
+      const readyRes = await signedFetch(identity, "/api/auth/barkd-ready", {
+        method: "POST",
+        body: "{}",
       });
       const readyBody = (await readyRes.json().catch(() => ({}))) as {
         ready?: boolean;

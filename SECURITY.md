@@ -12,7 +12,7 @@ Operator setup and env vars: [docs/configuration.md](docs/configuration.md). Use
 
 ### SDK mode
 
-Enable with `NEXT_PUBLIC_WALLET_BACKEND=sdk`. **Do not assume barkd-mode guarantees apply.**
+Enable with `NEXT_PUBLIC_WALLET_BACKEND=sdk`. **Blocked in production** unless `ALLOW_SDK_IN_PRODUCTION=true`. **Do not assume barkd-mode guarantees apply.**
 
 | Topic | barkd | SDK |
 |-------|-------|-----|
@@ -48,6 +48,8 @@ Passkey (PRF) mode requires a **recovery passphrase** at create. Pay / Secure / 
 - Session binding (IP + User-Agent) set at register; **destroy session** on mismatch (no lazy bind)
 - Unlock failures require a single-use token from `unlock-check`, bound to client fingerprint (blocks blind `unlock-failed` spam)
 - `GET /api/health` reports **daemon reachability only** (not whether a barkd wallet file exists)
+- `POST /api/auth/barkd-ready` checks barkd wallet file **only after pre-session Ed25519** (post-vault unlock); public `GET /api/wallet/ready` is deprecated (410)
+- Page **CSP uses per-request nonces** (no `script-src 'unsafe-inline'`)
 - Barkd hardware registration flag stored in IndexedDB (avoids routine unauthenticated status probes)
 - Server session **8h max** + **30 min idle** (re-unlock required)
 - API body cap **64 KiB**; `TRACE`/`TRACK` blocked

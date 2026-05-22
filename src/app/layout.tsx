@@ -2,6 +2,9 @@ import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
 
+/** Required so middleware `x-nonce` applies (static HTML breaks nonce CSP). */
+export const dynamic = "force-dynamic";
+
 const geist = Geist({
   subsets: ["latin"],
   variable: "--font-geist-sans",
