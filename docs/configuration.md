@@ -8,7 +8,8 @@ Copy [.env.example](../.env.example) to `.env.local` for local development.
 |----------|---------|-------------|
 | `NEXT_PUBLIC_WALLET_BACKEND` | `barkd` | `barkd` (recommended) or `sdk` (browser WASM). Public — baked into client bundle. |
 | `BARKD_URL` | `http://127.0.0.1:3535` | barkd REST base URL. **Must be loopback** — enforced at runtime. |
-| `SESSION_SECRET` | — | **Required in production** (≥16 chars). Encrypts `.ark-wallet-data/*`. |
+| `SESSION_SECRET` | — | **Required in production** (≥32 random chars). Encrypts `.ark-wallet-data/*`. |
+| `STRICT_FETCH_SITE` | `false` | If `true`, API mutations must send `Sec-Fetch-Site: same-origin`. |
 | `WALLET_DATA_DIR` | `.ark-wallet-data` | Server-side encrypted state directory. |
 | `BARKD_AUTH_HEADER` | `Authorization` | Header name when `BARKD_AUTH_TOKEN` is set. |
 | `BARKD_AUTH_TOKEN` | — | Optional bearer token for barkd HTTP API. |

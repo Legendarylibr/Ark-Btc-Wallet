@@ -1,11 +1,26 @@
+import { MIN_SESSION_SECRET_LENGTH } from "@/lib/security/constants";
+
 export async function register() {
   if (process.env.NODE_ENV !== "production") return;
 
   const secret =
     process.env.SESSION_SECRET ?? process.env.WALLET_DATA_SECRET ?? "";
-  if (secret.length < 16) {
+  if (secret.length < MIN_SESSION_SECRET_LENGTH) {
     console.error(
-      "[ark-wallet] FATAL: SESSION_SECRET (min 16 chars) is required in production.",
+      `[ark-wallet] FATAL: SESSION_SECRET (min ${MIN_SESSION_SECRET_LENGTH} chars) is required in production.`,
+    );
+    process.exit(1);
+  }
+
+  const weak = new Set([
+    "change-me-to-a-long-random-string",
+    "change-me",
+    "password",
+    "session_secret",
+  ]);
+  if (weak.has(secret.toLowerCase())) {
+    console.error(
+      "[ark-wallet] FATAL: SESSION_SECRET is a known placeholder — use a random value.",
     );
     process.exit(1);
   }

@@ -67,6 +67,5 @@ const guarded = withCryptoGuard(async (_req, bodyText) => {
 });
 
 export async function POST(req: NextRequest) {
-  const bodyText = await req.text();
-  return guarded(req, bodyText);
+  return guarded(req);
 }

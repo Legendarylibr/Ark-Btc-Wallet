@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withCryptoGuard } from "@/lib/api-guard";
+import { runCryptoGuard } from "@/lib/api-guard";
 import { verifyPreSessionRequest } from "@/lib/crypto/pre-session";
 import { assertApiSecurity } from "@/lib/inbound-security";
 import { barkd } from "@/lib/barkd";
 import { parseJsonBody } from "@/lib/safe-json";
+import { readLimitedBody } from "@/lib/security/request-limits";
 import { getSessionFingerprint } from "@/lib/webauthn/hardware-guard";
 import {
   createPendingOp,
@@ -43,8 +44,6 @@ async function postHandler(
   return NextResponse.json({ opId, expiresIn: 120 });
 }
 
-const guardedSession = withCryptoGuard(postHandler);
-
 export async function POST(req: NextRequest) {
   const block = assertApiSecurity(req);
   if (block) return block;
@@ -54,19 +53,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
-  const bodyText = await req.text();
+  const body = await readLimitedBody(req);
+  if (!body.ok) return body.response;
 
   const sid = req.cookies.get(SESSION_COOKIE)?.value;
   if (sid && getSessionFingerprint(req)) {
-    return guardedSession(req, bodyText);
+    return runCryptoGuard(req, body.text, postHandler);
   }
 
   if (!rateLimit(`pending-op-pre:${ip}`, 30, 60_000)) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
-  const pre = await verifyPreSessionRequest(req, bodyText);
+  const pre = await verifyPreSessionRequest(req, body.text);
   if (pre instanceof NextResponse) return pre;
 
-  return postHandler(req, bodyText);
+  return postHandler(req, body.text);
 }

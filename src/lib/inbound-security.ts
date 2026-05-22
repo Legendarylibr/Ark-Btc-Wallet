@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ARK_CLIENT_HEADER, ARK_CLIENT_VALUE } from "@/lib/ark-client";
-
-const LOCAL_HOSTS = new Set([
-  "127.0.0.1",
-  "localhost",
-  "::1",
-  "[::1]",
-]);
+import {
+  hostFromRequestHeader,
+  isLoopbackHostname,
+  isLoopbackUrl,
+} from "@/lib/security/loopback";
 
 let warnedRemote = false;
 
@@ -22,9 +20,7 @@ function warnInsecureConfig(): void {
 
 warnInsecureConfig();
 
-function isLoopbackHost(hostname: string): boolean {
-  return LOCAL_HOSTS.has(hostname.toLowerCase());
-}
+const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 /** Reject API calls when the app is reached from a non-loopback Host (LAN exposure). */
 export function assertLocalApiHost(request: NextRequest): NextResponse | null {
@@ -33,8 +29,8 @@ export function assertLocalApiHost(request: NextRequest): NextResponse | null {
     return null;
   }
 
-  const host = request.headers.get("host")?.split(":")[0]?.toLowerCase();
-  if (!host || !isLoopbackHost(host)) {
+  const host = hostFromRequestHeader(request.headers.get("host"));
+  if (!host || !isLoopbackHostname(host)) {
     return NextResponse.json(
       { error: "API only accepts loopback Host headers" },
       { status: 403 },
@@ -59,23 +55,11 @@ export function assertLocalOrigin(request: NextRequest): NextResponse | null {
       return null;
     }
     const referer = request.headers.get("referer");
-    if (referer) {
-      try {
-        const host = new URL(referer).hostname.toLowerCase();
-        if (isLoopbackHost(host)) return null;
-      } catch {
-        /* invalid */
-      }
-    }
+    if (referer && isLoopbackUrl(referer)) return null;
     return NextResponse.json({ error: "Missing Origin" }, { status: 403 });
   }
 
-  try {
-    const host = new URL(origin).hostname.toLowerCase();
-    if (!isLoopbackHost(host)) {
-      return NextResponse.json({ error: "Invalid Origin" }, { status: 403 });
-    }
-  } catch {
+  if (!isLoopbackUrl(origin)) {
     return NextResponse.json({ error: "Invalid Origin" }, { status: 403 });
   }
 
@@ -83,16 +67,36 @@ export function assertLocalOrigin(request: NextRequest): NextResponse | null {
 }
 
 /**
- * Block cross-site POSTs when the browser sends Sec-Fetch-Site (CSRF defense in depth).
- * Loopback wallets are still vulnerable to malicious local pages; this catches remote sites.
+ * Block cross-site and nested-document POSTs when Sec-Fetch-* is sent.
  */
 export function assertSameSiteFetch(request: NextRequest): NextResponse | null {
   warnInsecureConfig();
   if (process.env.ALLOW_REMOTE_HOST === "true") return null;
-  if (request.method === "GET" || request.method === "HEAD") return null;
+  if (!MUTATION_METHODS.has(request.method)) return null;
 
   const site = request.headers.get("sec-fetch-site")?.toLowerCase();
   if (site === "cross-site") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  if (site && site !== "same-origin" && site !== "same-site" && site !== "none") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const dest = request.headers.get("sec-fetch-dest")?.toLowerCase();
+  if (dest && (dest === "document" || dest === "iframe" || dest === "embed")) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  return null;
+}
+
+/** Optional strict mode: mutation requests must send same-origin Sec-Fetch-Site */
+export function assertStrictFetchSite(request: NextRequest): NextResponse | null {
+  if (process.env.STRICT_FETCH_SITE !== "true") return null;
+  if (!MUTATION_METHODS.has(request.method)) return null;
+
+  const site = request.headers.get("sec-fetch-site")?.toLowerCase();
+  if (site !== "same-origin") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   return null;
@@ -106,11 +110,22 @@ export function assertArkClient(request: NextRequest): NextResponse | null {
   return null;
 }
 
+const BLOCKED_METHODS = new Set(["TRACE", "TRACK", "CONNECT"]);
+
+export function assertAllowedMethod(request: NextRequest): NextResponse | null {
+  if (BLOCKED_METHODS.has(request.method)) {
+    return NextResponse.json({ error: "Method not allowed" }, { status: 405 });
+  }
+  return null;
+}
+
 export function assertApiSecurity(request: NextRequest): NextResponse | null {
   return (
+    assertAllowedMethod(request) ??
     assertLocalApiHost(request) ??
     assertArkClient(request) ??
     assertSameSiteFetch(request) ??
+    assertStrictFetchSite(request) ??
     assertLocalOrigin(request)
   );
 }

@@ -13,6 +13,7 @@ import { claimNonce } from "./nonce-store";
 import { constantTimeEqual } from "./secure-compare";
 import {
   ensureSessionClientBinding,
+  destroySession,
   getSession,
   isTimestampValid,
   SESSION_COOKIE,
@@ -51,6 +52,7 @@ export async function verifySignedRequest(
     );
   }
   if (bindResult === "mismatch") {
+    destroySession(sessionId);
     return NextResponse.json(
       { error: "Session binding mismatch — unlock again" },
       { status: 401 },

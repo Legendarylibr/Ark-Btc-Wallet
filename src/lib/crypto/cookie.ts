@@ -1,8 +1,11 @@
 import type { NextResponse } from "next/server";
+import { SERVER_SESSION_TTL_MS } from "@/lib/security/constants";
 
 /** __Host- prefix requires Secure + Path=/ and no Domain attribute */
 export const SESSION_COOKIE =
   process.env.NODE_ENV === "production" ? "__Host-wallet_sid" : "wallet_sid";
+
+const SESSION_MAX_AGE_SEC = Math.floor(SERVER_SESSION_TTL_MS / 1000);
 
 export function setSessionCookie(res: NextResponse, sessionId: string): void {
   res.cookies.set(SESSION_COOKIE, sessionId, {
@@ -10,7 +13,7 @@ export function setSessionCookie(res: NextResponse, sessionId: string): void {
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
     path: "/",
-    maxAge: 60 * 60 * 24,
+    maxAge: SESSION_MAX_AGE_SEC,
   });
 }
 

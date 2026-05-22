@@ -28,7 +28,7 @@ Passkey (PRF) mode requires a **recovery passphrase** at create. Pay / Secure / 
 | Setting | Requirement |
 |---------|-------------|
 | `BARKD_URL` | Loopback only (`127.0.0.1` / `localhost`) |
-| `SESSION_SECRET` | ≥16 characters |
+| `SESSION_SECRET` | ≥32 random characters |
 | `npm run dev` / `start` | Binds **127.0.0.1** |
 | barkd | Listen on loopback — never `0.0.0.0:3535` |
 
@@ -37,10 +37,15 @@ Passkey (PRF) mode requires a **recovery passphrase** at create. Pay / Secure / 
 ## In-app controls (barkd)
 
 - Ed25519 + UUID v4 nonces on `/api/wallet/*` (nonces persisted across restart)
-- Server WebAuthn on unlock, pay, secure, rotate (pending-op body binding)
-- Loopback Host/Origin, `x-ark-client`, block `Sec-Fetch-Site: cross-site` POSTs
-- Session binding (IP + User-Agent at register)
-- Auto-lock after 5 minutes idle
+- Middleware rejects malformed session cookies / nonces before handlers run
+- Server WebAuthn on unlock, pay, secure, rotate (pending-op body binding + credential ID match)
+- Loopback Host/Origin, `x-ark-client`, block `Sec-Fetch-Site: cross-site` and `Sec-Fetch-Dest: document` on API POSTs
+- Optional `STRICT_FETCH_SITE=true` — mutations must send `Sec-Fetch-Site: same-origin`
+- Session binding (IP + User-Agent); **destroy session** on binding mismatch
+- Server session **8h max** + **30 min idle** (re-unlock required)
+- API body cap **64 KiB**; `TRACE`/`TRACK` blocked
+- Production `SESSION_SECRET` min **32** chars; rejects known placeholders
+- Client auto-lock after 5 minutes idle
 - Pubkey pin per barkd fingerprint; setup token anti-squat for WebAuthn register
 
 Hardware gates the **web UI**, not barkd itself — set `BARKD_AUTH_TOKEN` when barkd supports it.

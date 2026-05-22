@@ -19,5 +19,5 @@ const guarded = withCryptoGuard(async (_req, _bodyText) => {
 });
 
 export async function GET(req: NextRequest) {
-  return guarded(req, "");
+  return guarded(req);
 }

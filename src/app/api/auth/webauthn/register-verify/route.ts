@@ -6,6 +6,8 @@ import { verifyHardwareRegistration } from "@/lib/webauthn/verify";
 import { consumeSetupToken } from "@/lib/crypto/setup-token";
 import { SETUP_TOKEN_HEADER } from "@/lib/webauthn/constants";
 import { clientIp, rateLimit } from "@/lib/crypto/rate-limit";
+import { parseJsonBody } from "@/lib/safe-json";
+import { readLimitedBody } from "@/lib/security/request-limits";
 
 export async function POST(req: NextRequest) {
   const block = assertApiSecurity(req);
@@ -15,11 +17,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
+  const raw = await readLimitedBody(req);
+  if (!raw.ok) return raw.response;
+
   try {
-    const body = (await req.json()) as {
+    const parsed = parseJsonBody<{
       response?: RegistrationResponseJSON;
       challenge?: string;
-    };
+    }>(raw.text);
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const body = parsed.data;
     if (!body.response || !body.challenge) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
