@@ -10,6 +10,7 @@ const SDK_MNEMONIC_KEY = "sdk-mnemonic";
 const SDK_MNEMONIC_BACKUP_KEY = "sdk-mnemonic-backup";
 const SDK_PASSKEY_KEY = "sdk-passkey-wallet";
 const SDK_HARDWARE_KEY = "sdk-hardware";
+const BARK_HARDWARE_KEY = "bark-hardware-registered";
 const LEGACY_LS_KEY = "ark-wallet-vault";
 
 function openDb(): Promise<IDBDatabase> {
@@ -94,10 +95,45 @@ export async function saveVaultToStorage(vault: EncryptedVault): Promise<void> {
 export async function clearVaultFromStorage(): Promise<void> {
   await idbDelete();
   localStorage.removeItem(LEGACY_LS_KEY);
+  await setBarkHardwareRegistered(false);
 }
 
 export async function vaultExists(): Promise<boolean> {
   return (await loadVaultFromStorage()) != null;
+}
+
+async function idbGetFlag(key: string): Promise<boolean> {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, "readonly");
+    const req = tx.objectStore(STORE).get(key);
+    req.onerror = () => reject(req.error);
+    req.onsuccess = () => resolve(req.result === true);
+  });
+}
+
+async function idbSetFlag(key: string, value: boolean): Promise<void> {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, "readwrite");
+    const req = value
+      ? tx.objectStore(STORE).put(true, key)
+      : tx.objectStore(STORE).delete(key);
+    req.onerror = () => reject(req.error);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+/** Avoid unauthenticated /api/auth/webauthn/status on every page load. */
+export async function getBarkHardwareRegistered(): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+  return idbGetFlag(BARK_HARDWARE_KEY);
+}
+
+export async function setBarkHardwareRegistered(registered: boolean): Promise<void> {
+  if (typeof window === "undefined") return;
+  await idbSetFlag(BARK_HARDWARE_KEY, registered);
 }
 
 export async function saveSdkMnemonicVault(vault: EncryptedVault): Promise<void> {

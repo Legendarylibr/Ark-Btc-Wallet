@@ -76,7 +76,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
         loading: false,
         error: onboarded
           ? null
-          : "Start barkd and create a wallet (see setup steps)",
+          : "Start barkd on this machine (see setup steps)",
       });
       if (onboarded) {
         const cached = getStoredReceiveAddress();
