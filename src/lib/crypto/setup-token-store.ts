@@ -52,7 +52,7 @@ function persist(): void {
   writeEncryptedFile(encPath(), { v: 1, tokens });
 }
 
-function prune(): void {
+export function pruneSetupTokens(): void {
   const map = getMap();
   const now = Date.now();
   let changed = false;
@@ -69,13 +69,13 @@ export function putSetupToken(
   id: string,
   entry: StoredSetupToken,
 ): void {
-  prune();
+  pruneSetupTokens();
   getMap().set(id, entry);
   persist();
 }
 
 export function getSetupToken(id: string): StoredSetupToken | undefined {
-  prune();
+  pruneSetupTokens();
   const entry = getMap().get(id);
   if (!entry || Date.now() > entry.exp) return undefined;
   return entry;

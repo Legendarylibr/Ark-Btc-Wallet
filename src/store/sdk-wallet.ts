@@ -31,6 +31,7 @@ import {
   type SdkUnlockMode,
 } from "@/sdk/webauthn/passkey-wallet";
 import { isPrfSupported } from "@/sdk/webauthn/prf";
+import { clearClientEphemeralData } from "@/lib/client-ephemeral";
 import { clearSdkAutoLock, touchSdkActivity } from "@/sdk/session-lock";
 import {
   clearPendingMnemonicBackup,
@@ -282,6 +283,7 @@ export const useSdkWalletStore = create<SdkWalletState>((set, get) => ({
     clearPendingMnemonicBackup();
     closeActiveSdkWallet();
     clearSdkAutoLock();
+    clearClientEphemeralData();
     set({
       unlocked: false,
       balance: null,

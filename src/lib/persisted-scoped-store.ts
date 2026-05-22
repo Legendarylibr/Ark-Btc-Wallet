@@ -103,3 +103,13 @@ export function clearExpiringStore(storeName: string): void {
   storeMap(storeName).clear();
   persist(storeName);
 }
+
+const SCOPED_STORE_NAMES = [
+  "wallet-register-challenges",
+  "webauthn-challenges",
+  "unlock-attempt-tokens",
+] as const;
+
+export function pruneAllScopedExpiringStores(): void {
+  for (const name of SCOPED_STORE_NAMES) prune(name);
+}

@@ -46,6 +46,15 @@ function loadFromSession(): void {
 
 loadFromSession();
 
+export function clearSdkPendingOpsStorage(): void {
+  ops.clear();
+  try {
+    sessionStorage.removeItem(STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 export function createSdkPendingOp(
   walletId: string,
   type: SdkPendingOpType,

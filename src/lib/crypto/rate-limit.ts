@@ -46,7 +46,7 @@ function persist(): void {
   writeEncryptedFile(encPath(), { v: 1, entries });
 }
 
-function prune(): void {
+export function pruneRateLimitStore(): void {
   const buckets = getBuckets();
   const now = Date.now();
   let changed = false;
@@ -64,7 +64,7 @@ export function rateLimit(
   limit: number,
   windowMs: number,
 ): boolean {
-  prune();
+  pruneRateLimitStore();
   const now = Date.now();
   const buckets = getBuckets();
   const entry = buckets.get(key);

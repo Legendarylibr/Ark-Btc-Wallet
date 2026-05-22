@@ -31,6 +31,7 @@ import {
 } from "@/lib/webauthn/constants";
 import { preSessionSignedJson } from "@/lib/pre-session-fetch";
 
+import { clearClientEphemeralData } from "@/lib/client-ephemeral";
 import { WALLET_LOCK_TIMEOUT_MS } from "@/lib/security/constants";
 
 const LOCK_TIMEOUT_MS = WALLET_LOCK_TIMEOUT_MS;
@@ -228,6 +229,7 @@ export const useCryptoStore = create<CryptoState>((set, get) => ({
       headers: { [LOGOUT_HEADER]: "1", ...arkClientHeaders() },
       credentials: "same-origin",
     });
+    clearClientEphemeralData();
   },
 
   touchActivity: () => {

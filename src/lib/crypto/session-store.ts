@@ -103,7 +103,7 @@ function persist(): void {
   saveFile({ v: 1, sessions });
 }
 
-function prune(): void {
+export function pruneExpiredSessions(): void {
   const map = getMap();
   const now = Date.now();
   let changed = false;
@@ -121,7 +121,7 @@ export function createSession(
   barkFingerprint: string | null,
   clientIpHash: string | null = null,
 ): WalletSession {
-  prune();
+  pruneExpiredSessions();
   const id = crypto.randomUUID();
   const now = Date.now();
   const session: WalletSession = {
@@ -139,7 +139,7 @@ export function createSession(
 }
 
 export function getSession(id: string): WalletSession | null {
-  prune();
+  pruneExpiredSessions();
   const s = getMap().get(id);
   if (!s) return null;
   const now = Date.now();
