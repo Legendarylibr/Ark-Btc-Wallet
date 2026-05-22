@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { ARK_WEBAUTHN_RP_NAME } from "./rp";
 
 export function getWebAuthnConfig(request: NextRequest): {
   rpName: string;
@@ -23,7 +24,7 @@ export function getWebAuthnConfig(request: NextRequest): {
   }
 
   return {
-    rpName: "Ark Wallet",
+    rpName: ARK_WEBAUTHN_RP_NAME,
     rpID,
     origins: [...origins],
   };
