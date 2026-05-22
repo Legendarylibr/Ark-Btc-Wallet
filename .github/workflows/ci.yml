@@ -32,16 +32,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: leanprover/lean-action@v1
-        with:
-          toolchain: leanprover/lean4:v4.14.0
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: npm
       - run: npm run fv:extract
       - run: git diff --exit-code lean/ArkWallet/FvFixtures.lean
-      - run: npm run fv:build
+      - uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: lean
+          auto-config: "false"
+          build: "true"
+          test: "false"
+          lint: "false"
 
   e2e:
     runs-on: ubuntu-latest
