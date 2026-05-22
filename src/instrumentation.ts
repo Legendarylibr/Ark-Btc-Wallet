@@ -38,7 +38,11 @@ export async function register() {
     );
   }
 
-  if (!process.env.BARKD_AUTH_TOKEN) {
+  const backend =
+    process.env.NEXT_PUBLIC_WALLET_BACKEND ??
+    process.env.WALLET_BACKEND ??
+    "barkd";
+  if (backend !== "sdk" && !process.env.BARKD_AUTH_TOKEN) {
     console.error(
       "[ark-wallet] WARNING: BARKD_AUTH_TOKEN unset — any local process can call barkd directly. Configure barkd auth when supported.",
     );

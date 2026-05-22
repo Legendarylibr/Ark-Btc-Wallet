@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withCryptoGuard } from "@/lib/api-guard";
+import { withSensitiveCryptoGuard } from "@/lib/api-guard-sensitive";
 import {
   BarkdError,
   barkd,
@@ -10,7 +10,7 @@ import { isArkAddress } from "@/lib/utils";
 import { parseJsonBody } from "@/lib/safe-json";
 import { safeApiError } from "@/lib/safe-error";
 
-const guarded = withCryptoGuard(async (_req, bodyText) => {
+const guarded = withSensitiveCryptoGuard(async (_req, bodyText) => {
   try {
     const parsed = parseJsonBody<{
       destination?: string;

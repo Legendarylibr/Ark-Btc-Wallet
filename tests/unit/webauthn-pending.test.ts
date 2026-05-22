@@ -25,7 +25,8 @@ describe("webauthn pending-op", () => {
   });
 
   it("maps API paths to op types", () => {
-    expect(HARDWARE_REQUIRED_PATHS.size).toBe(3);
+    expect(HARDWARE_REQUIRED_PATHS.size).toBe(4);
+    expect(pendingOpTypeForPath("/api/wallet/send/estimate", "")).toBe("send");
     expect(pendingOpTypeForPath("/api/wallet/send", "")).toBe("send");
     expect(pendingOpTypeForPath("/api/wallet/refresh", "")).toBe("refresh");
     expect(

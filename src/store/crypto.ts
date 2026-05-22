@@ -103,11 +103,6 @@ export const useCryptoStore = create<CryptoState>((set, get) => ({
   },
 
   unlock: async (passphrase) => {
-    const attempts = getUnlockAttempts();
-    if (attempts.count >= MAX_UNLOCK_ATTEMPTS) {
-      throw new Error("Too many unlock attempts — wait 15 minutes");
-    }
-
     const checkRes = await fetch("/api/auth/unlock-check", {
       method: "POST",
       headers: arkClientHeaders(),
@@ -119,6 +114,11 @@ export const useCryptoStore = create<CryptoState>((set, get) => ({
         (err as { error?: string }).error ??
           "Too many unlock attempts — wait 15 minutes",
       );
+    }
+
+    const attempts = getUnlockAttempts();
+    if (attempts.count >= MAX_UNLOCK_ATTEMPTS) {
+      throw new Error("Too many unlock attempts — wait 15 minutes");
     }
 
     if (!get().hardwareRegistered) {

@@ -92,6 +92,12 @@ export function pendingOpTypeForPath(
   pathname: string,
   search = "",
 ): PendingOpType | null {
+  if (
+    pathname.endsWith("/send/estimate") &&
+    HARDWARE_REQUIRED_PATHS.has("/api/wallet/send/estimate")
+  ) {
+    return "send";
+  }
   if (pathname.endsWith("/send") && HARDWARE_REQUIRED_PATHS.has("/api/wallet/send")) {
     return "send";
   }

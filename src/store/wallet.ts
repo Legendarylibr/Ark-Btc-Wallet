@@ -12,6 +12,7 @@ import {
   walletApiWithHardware,
   WalletApiError,
 } from "@/lib/wallet-api";
+import { useCryptoStore } from "@/store/crypto";
 
 export type Sheet = "send" | "receive" | null;
 
@@ -106,7 +107,11 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       const history = await walletApiJson<Movement[]>("/api/wallet/history");
       set({ history });
     } catch (e) {
-      if (e instanceof WalletApiError && e.status === 401) return;
+      if (e instanceof WalletApiError && e.status === 401) {
+        await useCryptoStore.getState().lock();
+        set({ error: "Session expired — unlock again", history: [] });
+        return;
+      }
       handleApiError(e, set);
     }
   },

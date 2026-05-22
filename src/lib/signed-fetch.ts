@@ -10,11 +10,6 @@ import {
 import { arkClientHeaders } from "@/lib/ark-client";
 import { bytesToBase64, sign } from "@/lib/crypto/ed25519";
 
-function randomNonce(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(16));
-  return bytesToBase64(bytes);
-}
-
 export async function signedFetch(
   identity: UnlockedIdentity,
   input: string,
@@ -31,7 +26,7 @@ export async function signedFetch(
         : "";
 
   const timestamp = String(Date.now());
-  const nonce = randomNonce();
+  const nonce = crypto.randomUUID();
   const bodyHash = hashBody(bodyText);
   const message = canonicalRequest({
     method,

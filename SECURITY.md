@@ -38,7 +38,7 @@ Passkey (PRF) mode requires a **recovery passphrase** at create. Pay / Secure / 
 
 - Ed25519 + UUID v4 nonces on `/api/wallet/*` (nonces persisted across restart)
 - Middleware rejects malformed session cookies / nonces before handlers run
-- Server WebAuthn on unlock, pay, secure, rotate (pending-op body binding + credential ID match)
+- Server WebAuthn on unlock, pay, fee estimate, secure, rotate (pending-op body binding + credential ID match)
 - Loopback Host/Origin, `x-ark-client`, block `Sec-Fetch-Site: cross-site` and `Sec-Fetch-Dest: document` on API POSTs
 - Optional `STRICT_FETCH_SITE=true` — mutations must send `Sec-Fetch-Site: same-origin`
 - Session binding (IP + User-Agent); **destroy session** on binding mismatch

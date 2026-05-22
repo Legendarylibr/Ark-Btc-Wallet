@@ -119,7 +119,7 @@ npm run build
 |---------|---------|
 | `npm run dev` | Dev server (`127.0.0.1:3000`) |
 | `npm run build` / `start` | Production |
-| `npm test` | Vitest (78+ unit tests) |
+| `npm test` | Vitest (86+ unit tests) |
 
 ## License
 

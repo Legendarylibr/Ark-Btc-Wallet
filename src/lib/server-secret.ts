@@ -2,7 +2,7 @@ import { scryptSync } from "node:crypto";
 import { MIN_SESSION_SECRET_LENGTH } from "@/lib/security/constants";
 
 const SALT = "ark-wallet-server-v1";
-const DEV_MIN_SECRET_LENGTH = 16;
+const DEV_MIN_SECRET_LENGTH = 32;
 
 export function getServerSecretKey(): Buffer {
   const secret =
