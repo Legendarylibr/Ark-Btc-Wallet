@@ -5,7 +5,7 @@ import { Sheet } from "@/components/ui/Sheet";
 import { Button } from "@/components/ui/Button";
 import { isArkAddress } from "@/lib/utils";
 import {
-  walletApiJson,
+  walletApiJsonWithHardware,
   walletApiWithHardware,
 } from "@/lib/wallet-api";
 import { Check, Delete } from "lucide-react";
@@ -109,7 +109,7 @@ export function SendSheet({
     setEstimateLoading(true);
     setError(null);
 
-    walletApiJson<SendEstimate>("/api/wallet/send/estimate", {
+    walletApiJsonWithHardware<SendEstimate>("/api/wallet/send/estimate", {
       method: "POST",
       body: JSON.stringify({
         destination: address.trim(),

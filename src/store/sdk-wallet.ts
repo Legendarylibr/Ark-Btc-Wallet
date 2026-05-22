@@ -27,7 +27,10 @@ import {
 } from "@/sdk/webauthn/passkey-wallet";
 import { isPrfSupported } from "@/sdk/webauthn/prf";
 import { clearSdkAutoLock, touchSdkActivity } from "@/sdk/session-lock";
-import { zeroize } from "@/lib/crypto/vault";
+import {
+  clearPendingMnemonicBackup,
+  setPendingMnemonicBackup,
+} from "@/sdk/mnemonic-backup";
 
 interface SdkWalletState {
   ready: boolean;
@@ -41,7 +44,7 @@ interface SdkWalletState {
   wallet: SdkWalletHandle | null;
   balance: SdkBalance | null;
   address: string | null;
-  mnemonicBackup: string | null;
+  showMnemonicBackup: boolean;
   loading: boolean;
   error: string | null;
 
@@ -63,10 +66,11 @@ interface SdkWalletState {
   dismissBackup: () => void;
 }
 
-function scrubMnemonicBackup(
+function hideMnemonicBackup(
   set: (partial: Partial<SdkWalletState>) => void,
 ): void {
-  set({ mnemonicBackup: null });
+  clearPendingMnemonicBackup();
+  set({ showMnemonicBackup: false });
 }
 
 async function openWalletFromMnemonic(mnemonic: string) {
@@ -88,7 +92,7 @@ export const useSdkWalletStore = create<SdkWalletState>((set, get) => ({
   wallet: null,
   balance: null,
   address: null,
-  mnemonicBackup: null,
+  showMnemonicBackup: false,
   loading: false,
   error: null,
 
@@ -129,9 +133,10 @@ export const useSdkWalletStore = create<SdkWalletState>((set, get) => ({
         hasRecoveryBackup: true,
         hardwareRegistered: false,
         ...opened,
-        mnemonicBackup: mnemonic,
+        showMnemonicBackup: true,
         loading: false,
       });
+      setPendingMnemonicBackup(mnemonic);
       return mnemonic;
     } catch (e) {
       set({
@@ -157,9 +162,10 @@ export const useSdkWalletStore = create<SdkWalletState>((set, get) => ({
         unlockMode: "passphrase",
         hardwareRegistered: false,
         ...opened,
-        mnemonicBackup: mnemonic,
+        showMnemonicBackup: true,
         loading: false,
       });
+      setPendingMnemonicBackup(mnemonic);
       return mnemonic;
     } catch (e) {
       set({
@@ -269,11 +275,7 @@ export const useSdkWalletStore = create<SdkWalletState>((set, get) => ({
   },
 
   lock: () => {
-    const backup = get().mnemonicBackup;
-    if (backup) {
-      const bytes = new TextEncoder().encode(backup);
-      zeroize(bytes);
-    }
+    clearPendingMnemonicBackup();
     get().wallet?.close();
     clearSdkAutoLock();
     set({
@@ -281,7 +283,7 @@ export const useSdkWalletStore = create<SdkWalletState>((set, get) => ({
       wallet: null,
       balance: null,
       address: null,
-      mnemonicBackup: null,
+      showMnemonicBackup: false,
     });
   },
 
@@ -406,5 +408,5 @@ export const useSdkWalletStore = create<SdkWalletState>((set, get) => ({
   },
 
   clearError: () => set({ error: null }),
-  dismissBackup: () => scrubMnemonicBackup(set),
+  dismissBackup: () => hideMnemonicBackup(set),
 }));

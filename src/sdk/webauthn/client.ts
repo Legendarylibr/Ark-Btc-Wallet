@@ -7,6 +7,11 @@ import {
   saveSdkHardwareCredential,
 } from "@/lib/vault-storage";
 import { loadSdkMnemonic } from "@/sdk/bark/mnemonic-vault";
+import {
+  spkiFromStoredBase64,
+  verifySdkAuthenticationAssertion,
+  verifySdkRegistrationClientData,
+} from "@/sdk/webauthn/assertion-verify";
 import { getSdkWebAuthnConfig } from "./config";
 import { consumeSdkChallenge, storeSdkChallenge } from "./challenges";
 import {
@@ -59,6 +64,7 @@ export async function registerSdkHardware(passphrase: string): Promise<void> {
 
   const { rpName, rpID } = getSdkWebAuthnConfig();
   const challenge = crypto.getRandomValues(new Uint8Array(32));
+  const challengeB64 = bufferToBase64url(challenge.buffer);
   storeSdkChallenge(`reg:${walletId}`, challenge);
 
   const userId = base64ToBytes(walletId).slice(0, 64);
@@ -86,9 +92,18 @@ export async function registerSdkHardware(passphrase: string): Promise<void> {
   const publicKey = att.getPublicKey();
   if (!publicKey) throw new Error("No public key from authenticator");
 
-  const challengeB64 = bufferToBase64url(challenge.buffer);
   if (!consumeSdkChallenge(`reg:${walletId}`, challengeB64)) {
     throw new Error("Registration challenge expired");
+  }
+
+  const regCheck = await verifySdkRegistrationClientData({
+    credential,
+    expectedChallengeB64url: challengeB64,
+    expectedOrigin: window.location.origin,
+    expectedRpId: rpID,
+  });
+  if (!regCheck.ok) {
+    throw new Error(regCheck.error);
   }
 
   await saveSdkHardwareCredential({
@@ -108,6 +123,7 @@ async function authenticateSdkHardware(
     throw new Error("Register a hardware key first");
   }
 
+  const { rpID } = getSdkWebAuthnConfig();
   const challenge = crypto.getRandomValues(new Uint8Array(32));
   const challengeB64 = bufferToBase64url(challenge.buffer);
   storeSdkChallenge(`auth:${walletId}:${opId}`, challenge);
@@ -115,7 +131,7 @@ async function authenticateSdkHardware(
   const assertion = (await navigator.credentials.get({
     publicKey: {
       challenge,
-      rpId: getSdkWebAuthnConfig().rpID,
+      rpId: rpID,
       allowCredentials: [
         {
           id: base64urlToBuffer(stored.credentialId),
@@ -129,13 +145,28 @@ async function authenticateSdkHardware(
 
   if (!assertion) throw new Error("Device confirmation cancelled");
 
-  if (bufferToBase64url(assertion.rawId) !== stored.credentialId) {
-    throw new Error("Wrong security key");
-  }
-
   if (!consumeSdkChallenge(`auth:${walletId}:${opId}`, challengeB64)) {
     throw new Error("Device confirmation expired — try again");
   }
+
+  const verified = await verifySdkAuthenticationAssertion({
+    publicKeySpki: spkiFromStoredBase64(stored.publicKey),
+    credentialId: stored.credentialId,
+    assertion,
+    expectedChallengeB64url: challengeB64,
+    expectedOrigin: window.location.origin,
+    expectedRpId: rpID,
+    storedCounter: stored.counter,
+  });
+
+  if (!verified.ok) {
+    throw new Error(verified.error);
+  }
+
+  await saveSdkHardwareCredential({
+    ...stored,
+    counter: verified.newCounter,
+  });
 }
 
 /** Bind hardware confirmation to a specific action (send, refresh, new address) */

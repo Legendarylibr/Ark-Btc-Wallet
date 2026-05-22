@@ -11,6 +11,7 @@ import { SendSheet } from "@/components/SendSheet";
 import { ReceiveSheet } from "@/components/ReceiveSheet";
 import { SdkRegisterHardware } from "@/components/SdkRegisterHardware";
 import { SdkTrustNotice } from "@/components/SdkTrustNotice";
+import { MnemonicBackupBanner } from "@/components/MnemonicBackupBanner";
 import { SDK_MODE_LABEL } from "@/sdk/trust-model";
 import { registerSdkAutoLock } from "@/sdk/session-lock";
 import { Fingerprint, LogOut, RefreshCw, Shield } from "lucide-react";
@@ -278,22 +279,8 @@ export function SdkWalletApp() {
 
   return (
     <div className="min-h-dvh max-w-lg mx-auto flex flex-col">
-      {store.mnemonicBackup && (
-        <div className="mx-5 mt-4 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
-          <p className="text-amber-100 text-xs font-semibold mb-2">
-            Back up this recovery phrase now
-          </p>
-          <p className="font-mono text-xs break-all text-white mb-3">
-            {store.mnemonicBackup}
-          </p>
-          <Button
-            variant="secondary"
-            className="w-full text-sm"
-            onClick={() => store.dismissBackup()}
-          >
-            I saved it
-          </Button>
-        </div>
+      {store.showMnemonicBackup && (
+        <MnemonicBackupBanner onDismiss={() => store.dismissBackup()} />
       )}
 
       <SdkTrustNotice variant="compact" />
