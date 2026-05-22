@@ -141,17 +141,20 @@ export const useCryptoStore = create<CryptoState>((set, get) => ({
     unlockFailStreak = 0;
 
     try {
+      const readyPayload = JSON.stringify({ unlockToken });
       const readyRes = await signedFetch(identity, "/api/auth/barkd-ready", {
         method: "POST",
-        body: "{}",
+        body: readyPayload,
       });
       const readyBody = (await readyRes.json().catch(() => ({}))) as {
         ready?: boolean;
+        error?: string;
       };
       if (!readyRes.ok || !readyBody.ready) {
         zeroize(identity.privateKey);
         throw new Error(
-          "barkd wallet not ready — start barkd and create a wallet before unlocking",
+          readyBody.error ??
+            "barkd not ready — start barkd on 127.0.0.1 (create a wallet if this is first setup)",
         );
       }
 

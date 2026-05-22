@@ -39,7 +39,7 @@ vi.mock("@/lib/barkd", () => {
     barkd: {
       daemonReachable: vi.fn(async () => true),
       walletExists: vi.fn(async () => true),
-      walletStatus: vi.fn(async () => ({ fingerprint: "fp-route-test" })),
+      walletStatus: vi.fn(async () => ({ fingerprint: "fp-barkd-ready" })),
       balance: vi.fn(async () => mockBalance),
     },
   };
@@ -73,12 +73,18 @@ describe("API route handlers", () => {
     expect(res.status).toBe(410);
   });
 
-  it("POST /api/auth/barkd-ready requires pre-session signature", async () => {
+  it("POST /api/auth/barkd-ready requires unlock token and pre-session signature", async () => {
     useTempWalletDataDir();
+    const { POST: unlockCheck } = await import("@/app/api/auth/unlock-check/route");
+    const checkRes = await unlockCheck(
+      apiRequest("/api/auth/unlock-check", { method: "POST" }),
+    );
+    const { unlockToken } = (await checkRes.json()) as { unlockToken: string };
+
     const { generateKeypair, bytesToBase64 } = await import("@/lib/crypto/ed25519");
     const { publicKey, privateKey } = await generateKeypair();
     const publicKeyB64 = bytesToBase64(publicKey);
-    const body = "{}";
+    const body = JSON.stringify({ unlockToken });
     const headers = await buildSignedWalletHeaders({
       method: "POST",
       pathname: "/api/auth/barkd-ready",
@@ -95,7 +101,7 @@ describe("API route handlers", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ready: true });
     expect(barkd.daemonReachable).toHaveBeenCalled();
-    expect(barkd.walletExists).toHaveBeenCalled();
+    expect(barkd.walletExists).not.toHaveBeenCalled();
   });
 
   it("GET /api/auth/challenge issues challenge", async () => {
@@ -134,7 +140,7 @@ describe("API route handlers", () => {
     const publicKeyB64 = bytesToBase64(publicKey);
     const session = createSession(
       publicKeyB64,
-      "fp-route-test",
+      "fp-barkd-ready",
       clientBinding(),
     );
     const headers = await buildSignedWalletHeaders({
