@@ -90,9 +90,13 @@ export function assertSameSiteFetch(request: NextRequest): NextResponse | null {
   return null;
 }
 
-/** Optional strict mode: mutation requests must send same-origin Sec-Fetch-Site */
+/** Mutation requests must send same-origin Sec-Fetch-Site (default in production). */
 export function assertStrictFetchSite(request: NextRequest): NextResponse | null {
-  if (process.env.STRICT_FETCH_SITE !== "true") return null;
+  const strict =
+    process.env.STRICT_FETCH_SITE === "true" ||
+    (process.env.NODE_ENV === "production" &&
+      process.env.RELAX_FETCH_SITE !== "true");
+  if (!strict) return null;
   if (!MUTATION_METHODS.has(request.method)) return null;
 
   const site = request.headers.get("sec-fetch-site")?.toLowerCase();

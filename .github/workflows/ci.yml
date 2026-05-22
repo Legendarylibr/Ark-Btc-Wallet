@@ -26,3 +26,4 @@ jobs:
       - run: npm run build
         env:
           SESSION_SECRET: ci-test-session-secret-min-32-chars-long
+          BARKD_AUTH_TOKEN: ci-test-barkd-auth-token-placeholder

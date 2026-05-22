@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withCryptoGuard } from "@/lib/api-guard";
+import { withReadCryptoGuard } from "@/lib/api-guard-read";
 import { BarkdError, barkd, isArkMovement } from "@/lib/barkd";
 import { safeApiError } from "@/lib/safe-error";
 
-const guarded = withCryptoGuard(async (_req, _bodyText) => {
+const guarded = withReadCryptoGuard(async (_req, _bodyText) => {
   try {
     const history = await barkd.history();
     const arkOnly = history.filter(isArkMovement);

@@ -8,7 +8,12 @@ import {
   loadSdkMnemonicBackup,
   saveSdkMnemonic,
 } from "@/sdk/bark/mnemonic-vault";
-import type { SdkBalance, SdkSendEstimate, SdkWalletHandle } from "@/sdk/bark/types";
+import type { SdkBalance, SdkSendEstimate } from "@/sdk/bark/types";
+import {
+  closeActiveSdkWallet,
+  getActiveSdkWallet,
+  setActiveSdkWallet,
+} from "@/sdk/active-wallet";
 import { validatePassphrase } from "@/lib/passphrase";
 import {
   confirmSdkOperation,
@@ -41,7 +46,6 @@ interface SdkWalletState {
   hasRecoveryBackup: boolean;
   /** Legacy passphrase + confirm-on-pay */
   hardwareRegistered: boolean;
-  wallet: SdkWalletHandle | null;
   balance: SdkBalance | null;
   address: string | null;
   showMnemonicBackup: boolean;
@@ -75,10 +79,11 @@ function hideMnemonicBackup(
 
 async function openWalletFromMnemonic(mnemonic: string) {
   const wallet = await openSdkWallet(mnemonic);
+  setActiveSdkWallet(wallet);
   await wallet.sync();
   const balance = await wallet.balance();
   const address = await wallet.newAddress();
-  return { wallet, balance, address };
+  return { balance, address };
 }
 
 export const useSdkWalletStore = create<SdkWalletState>((set, get) => ({
@@ -89,7 +94,6 @@ export const useSdkWalletStore = create<SdkWalletState>((set, get) => ({
   prfAvailable: false,
   hasRecoveryBackup: false,
   hardwareRegistered: false,
-  wallet: null,
   balance: null,
   address: null,
   showMnemonicBackup: false,
@@ -276,11 +280,10 @@ export const useSdkWalletStore = create<SdkWalletState>((set, get) => ({
 
   lock: () => {
     clearPendingMnemonicBackup();
-    get().wallet?.close();
+    closeActiveSdkWallet();
     clearSdkAutoLock();
     set({
       unlocked: false,
-      wallet: null,
       balance: null,
       address: null,
       showMnemonicBackup: false,
@@ -288,7 +291,7 @@ export const useSdkWalletStore = create<SdkWalletState>((set, get) => ({
   },
 
   sync: async () => {
-    const { wallet } = get();
+    const wallet = getActiveSdkWallet();
     if (!wallet) return;
     set({ loading: true, error: null });
     try {
@@ -304,7 +307,8 @@ export const useSdkWalletStore = create<SdkWalletState>((set, get) => ({
   },
 
   refreshAddress: async () => {
-    const { wallet, unlockMode } = get();
+    const wallet = getActiveSdkWallet();
+    const { unlockMode } = get();
     if (!wallet) return;
     touchSdkActivity();
     if (unlockMode === "passphrase") {
@@ -317,13 +321,14 @@ export const useSdkWalletStore = create<SdkWalletState>((set, get) => ({
   },
 
   estimateSend: async (destination, amountSat) => {
-    const { wallet } = get();
+    const wallet = getActiveSdkWallet();
     if (!wallet) throw new Error("Wallet locked");
     return wallet.estimateArkSend(destination, amountSat);
   },
 
   send: async (destination, amountSat) => {
-    const { wallet, unlockMode } = get();
+    const wallet = getActiveSdkWallet();
+    const { unlockMode } = get();
     if (!wallet) throw new Error("Wallet locked");
 
     if (unlockMode === "passphrase") {
@@ -368,7 +373,8 @@ export const useSdkWalletStore = create<SdkWalletState>((set, get) => ({
   },
 
   secure: async () => {
-    const { wallet, unlockMode } = get();
+    const wallet = getActiveSdkWallet();
+    const { unlockMode } = get();
     if (!wallet) return;
     touchSdkActivity();
 

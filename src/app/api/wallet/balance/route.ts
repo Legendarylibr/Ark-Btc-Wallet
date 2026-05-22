@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withCryptoGuard } from "@/lib/api-guard";
+import { withReadCryptoGuard } from "@/lib/api-guard-read";
 import { BarkdError, barkd } from "@/lib/barkd";
 import { safeApiError } from "@/lib/safe-error";
 
-const guarded = withCryptoGuard(async (_req, _bodyText) => {
+const guarded = withReadCryptoGuard(async (_req, _bodyText) => {
   try {
     const balance = await barkd.balance();
     return NextResponse.json(balance);

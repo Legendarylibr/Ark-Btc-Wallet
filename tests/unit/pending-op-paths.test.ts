@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pendingOpTypeForPath } from "@/lib/webauthn/pending-op";
+import { pendingOpTypeForPath } from "@/lib/webauthn/pending-op-paths";
 
 describe("pendingOpTypeForPath", () => {
   it("maps send estimate to send op with hardware", () => {

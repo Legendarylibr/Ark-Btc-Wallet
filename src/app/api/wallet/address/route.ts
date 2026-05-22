@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withCryptoGuard } from "@/lib/api-guard";
+import { withReadCryptoGuard } from "@/lib/api-guard-read";
 import { withSensitiveCryptoGuard } from "@/lib/api-guard-sensitive";
 import { BarkdError, barkd } from "@/lib/barkd";
 import { safeApiError } from "@/lib/safe-error";
@@ -33,7 +33,7 @@ async function addressHandler(_req: NextRequest): Promise<NextResponse> {
   }
 }
 
-const guardedRead = withCryptoGuard(async (req, _bodyText) =>
+const guardedRead = withReadCryptoGuard(async (req, _bodyText) =>
   addressHandler(req),
 );
 const guardedRotate = withSensitiveCryptoGuard(async (req, _bodyText) =>

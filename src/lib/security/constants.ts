@@ -1,6 +1,9 @@
 /** Client idle auto-lock (barkd + SDK browser wallet) */
 export const WALLET_LOCK_TIMEOUT_MS = 5 * 60 * 1000;
 
+/** Balance/history reads allowed after recent WebAuthn (matches auto-lock window) */
+export const READ_HARDWARE_TTL_MS = WALLET_LOCK_TIMEOUT_MS;
+
 /** Server session absolute lifetime */
 export const SERVER_SESSION_TTL_MS = 8 * 60 * 60 * 1000;
 
