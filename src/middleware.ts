@@ -19,6 +19,8 @@ import { withApiSecurityHeaders } from "@/lib/security/api-headers";
 
 const WALLET_API_PREFIX = "/api/wallet";
 const API_PREFIX = "/api/";
+/** Pre-session barkd readiness (no Ed25519 session). */
+const WALLET_PRESESSION_PATHS = new Set(["/api/wallet/ready"]);
 const MIN_SIG_LENGTH = 80;
 
 function apiNext(): NextResponse {
@@ -51,6 +53,12 @@ export function middleware(request: NextRequest) {
 
   if (request.nextUrl.pathname.startsWith(WALLET_API_PREFIX)) {
     const pathname = request.nextUrl.pathname;
+    if (
+      request.method === "GET" &&
+      WALLET_PRESESSION_PATHS.has(pathname)
+    ) {
+      return apiNext();
+    }
     if (request.method === "GET" && isReadProtectedPath(pathname)) {
       const readBlock = assertStrictReadFetchSite(request);
       if (readBlock) return apiReject(readBlock);

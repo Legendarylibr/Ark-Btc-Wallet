@@ -38,6 +38,7 @@ vi.mock("@/lib/barkd", () => {
     BarkdError,
     barkd: {
       daemonReachable: vi.fn(async () => true),
+      walletExists: vi.fn(async () => true),
       walletStatus: vi.fn(async () => ({ fingerprint: "fp-route-test" })),
       balance: vi.fn(async () => mockBalance),
     },
@@ -64,6 +65,26 @@ describe("API route handlers", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body).toEqual({ ok: true });
+  });
+
+  it("GET /api/wallet/ready reflects daemon and wallet", async () => {
+    useTempWalletDataDir();
+    const { barkd } = await import("@/lib/barkd");
+    const { GET } = await import("@/app/api/wallet/ready/route");
+    const res = await GET(apiRequest("/api/wallet/ready"));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ready: true });
+    expect(barkd.daemonReachable).toHaveBeenCalled();
+    expect(barkd.walletExists).toHaveBeenCalled();
+  });
+
+  it("GET /api/wallet/ready is false when no wallet file", async () => {
+    useTempWalletDataDir();
+    const { barkd } = await import("@/lib/barkd");
+    vi.mocked(barkd.walletExists).mockResolvedValueOnce(false);
+    const { GET } = await import("@/app/api/wallet/ready/route");
+    const res = await GET(apiRequest("/api/wallet/ready"));
+    expect(await res.json()).toEqual({ ready: false });
   });
 
   it("GET /api/auth/challenge issues challenge", async () => {

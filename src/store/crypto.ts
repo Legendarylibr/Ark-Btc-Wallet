@@ -140,6 +140,20 @@ export const useCryptoStore = create<CryptoState>((set, get) => ({
     unlockFailStreak = 0;
 
     try {
+      const readyRes = await fetch("/api/wallet/ready", {
+        credentials: "same-origin",
+        headers: arkClientHeaders(),
+      });
+      const readyBody = (await readyRes.json().catch(() => ({}))) as {
+        ready?: boolean;
+      };
+      if (!readyRes.ok || !readyBody.ready) {
+        zeroize(identity.privateKey);
+        throw new Error(
+          "barkd wallet not ready — start barkd and create a wallet before unlocking",
+        );
+      }
+
       const challengeRes = await fetch("/api/auth/challenge", {
         credentials: "same-origin",
         headers: arkClientHeaders(),

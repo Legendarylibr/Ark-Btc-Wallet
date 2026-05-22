@@ -20,8 +20,8 @@ const securityHeaders = [
     value: [
       "default-src 'self'",
       process.env.NEXT_PUBLIC_WALLET_BACKEND === "sdk"
-        ? "script-src 'self' 'wasm-unsafe-eval'"
-        : "script-src 'self'",
+        ? "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'"
+        : "script-src 'self' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data:",
       "connect-src 'self'",

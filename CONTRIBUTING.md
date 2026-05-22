@@ -51,6 +51,7 @@ Cloning the full repo downloads `packages/bark-ffi-bindings/` (~large). You can 
 - Match existing patterns: minimal scope, no drive-by refactors.
 - API routes: use `withCryptoGuard` / `withSensitiveCryptoGuard` and `parseJsonBody`.
 - Add or extend `tests/unit/api-routes.test.ts` when changing route behavior (handlers are invoked directly with mocked `barkd`).
+- E2E: `npm run test:e2e:install` once, then `npm run build && npm run test:e2e` (starts `next start` in CI). Smoke tests live in `tests/e2e/`.
 - Security-sensitive helpers belong in `src/lib/crypto/` or `src/lib/webauthn/`.
 
 ## Security issues

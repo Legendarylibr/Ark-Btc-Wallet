@@ -11,6 +11,9 @@
 # testing
 /coverage
 node_modules/.vite/
+/test-results/
+/playwright-report/
+/blob-report/
 
 # next.js
 /.next/
