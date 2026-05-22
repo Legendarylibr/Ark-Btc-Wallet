@@ -123,4 +123,4 @@ npm run build
 
 ## License
 
-[MIT](LICENSE) — Copyright (c) 2026 [Legendarylibr](https://github.com/Legendarylibr)
+[MIT](LICENSE) 
