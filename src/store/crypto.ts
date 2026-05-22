@@ -108,13 +108,17 @@ export const useCryptoStore = create<CryptoState>((set, get) => ({
       headers: arkClientHeaders(),
       credentials: "same-origin",
     });
-    if (!checkRes.ok) {
-      const err = await checkRes.json().catch(() => ({}));
+    const checkBody = (await checkRes.json().catch(() => ({}))) as {
+      allowed?: boolean;
+      unlockToken?: string;
+      error?: string;
+    };
+    if (!checkRes.ok || !checkBody.allowed || !checkBody.unlockToken) {
       throw new Error(
-        (err as { error?: string }).error ??
-          "Too many unlock attempts — wait 15 minutes",
+        checkBody.error ?? "Too many unlock attempts — wait 15 minutes",
       );
     }
+    const unlockToken = checkBody.unlockToken;
 
     const attempts = getUnlockAttempts();
     if (attempts.count >= MAX_UNLOCK_ATTEMPTS) {
@@ -133,7 +137,7 @@ export const useCryptoStore = create<CryptoState>((set, get) => ({
       identity = await unlockVault(passphrase, vault);
     } catch (e) {
       recordUnlockFailure();
-      await reportUnlockFailure();
+      await reportUnlockFailure(unlockToken);
       const delay = unlockBackoffMs(attempts.count);
       await new Promise((r) => setTimeout(r, delay));
       throw e;
@@ -274,12 +278,16 @@ function recordUnlockFailure(): void {
   );
 }
 
-async function reportUnlockFailure(): Promise<void> {
+async function reportUnlockFailure(unlockToken: string): Promise<void> {
   try {
     await fetch("/api/auth/unlock-failed", {
       method: "POST",
-      headers: arkClientHeaders(),
+      headers: {
+        "Content-Type": "application/json",
+        ...arkClientHeaders(),
+      },
       credentials: "same-origin",
+      body: JSON.stringify({ unlockToken }),
     });
   } catch {
     /* best-effort server budget */

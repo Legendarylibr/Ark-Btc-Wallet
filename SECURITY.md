@@ -45,7 +45,8 @@ Passkey (PRF) mode requires a **recovery passphrase** at create. Pay / Secure / 
 - `POST /api/wallet/sync` only triggers barkd sync — **no balance in the response** (use read-protected GET balance)
 - Register challenges and setup tokens persist encrypted on disk (survive restart)
 - Persisted pending ops, WebAuthn challenges, and rate limits across restarts
-- Session binding (IP + User-Agent); **destroy session** on binding mismatch
+- Session binding (IP + User-Agent) set at register; **destroy session** on mismatch (no lazy bind)
+- Unlock failures require a single-use token from `unlock-check` (blocks blind `unlock-failed` spam)
 - Server session **8h max** + **30 min idle** (re-unlock required)
 - API body cap **64 KiB**; `TRACE`/`TRACK` blocked
 - Production `SESSION_SECRET` min **32** chars; rejects known placeholders
@@ -60,7 +61,7 @@ Any local process can call `http://127.0.0.1:3535` while barkd runs. Mitigate wi
 
 ## Data on disk
 
-`.ark-wallet-data/` (mode `700`): encrypted `sessions`, `nonces`, `unlock-limits`, `pubkey-pins`, `webauthn`.
+`.ark-wallet-data/` (mode `700`): encrypted `sessions`, `nonces`, `unlock-limits`, `unlock-attempt-tokens`, `pubkey-pins`, `webauthn`.
 
 ## Incident response
 

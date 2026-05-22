@@ -31,12 +31,17 @@ describe("session-store", () => {
     expect(getSession(s.id)).toBeNull();
   });
 
-  it("migrates client binding on first use", () => {
+  it("rejects sessions created without client binding", () => {
     useTempWalletDataDir();
     const s = createSession(PK_B64, "fp-2", null);
-    expect(ensureSessionClientBinding(s.id, "new-bind")).toBe("ok");
-    expect(ensureSessionClientBinding(s.id, "new-bind")).toBe("ok");
-    expect(ensureSessionClientBinding(s.id, "other-bind")).toBe("mismatch");
+    expect(ensureSessionClientBinding(s.id, "new-bind")).toBe("mismatch");
+  });
+
+  it("enforces binding set at session creation", () => {
+    useTempWalletDataDir();
+    const s = createSession(PK_B64, "fp-2", "bind-a");
+    expect(ensureSessionClientBinding(s.id, "bind-a")).toBe("ok");
+    expect(ensureSessionClientBinding(s.id, "bind-b")).toBe("mismatch");
   });
 
   it("validates clock skew", () => {
