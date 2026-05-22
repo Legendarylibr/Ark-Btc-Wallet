@@ -1,7 +1,10 @@
 import { NextRequest } from "next/server";
 import { describe, expect, it } from "vitest";
 import { assertApiSecurity } from "@/lib/inbound-security";
-import { isReadProtectedPath } from "@/lib/webauthn/pending-op-paths";
+import {
+  isReadCryptoPostPath,
+  isReadProtectedPath,
+} from "@/lib/webauthn/pending-op-paths";
 
 describe("API security surface", () => {
   it("rejects wallet API without ark client header", () => {
@@ -21,5 +24,6 @@ describe("API security surface", () => {
     expect(isReadProtectedPath("/api/wallet/balance")).toBe(true);
     expect(isReadProtectedPath("/api/wallet/history")).toBe(true);
     expect(isReadProtectedPath("/api/wallet/sync")).toBe(false);
+    expect(isReadCryptoPostPath("/api/wallet/sync")).toBe(true);
   });
 });

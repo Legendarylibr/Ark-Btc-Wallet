@@ -9,6 +9,7 @@ import {
 import { hashBody } from "@/lib/crypto/canonical";
 import {
   isReadProtectedPath,
+  isReadCryptoPostPath,
   pendingOpTypeForPath,
   type PendingOpType,
 } from "@/lib/webauthn/pending-op-paths";
@@ -139,7 +140,11 @@ async function walletApiForPath(
   }
 
   const method = (init.method ?? "GET").toUpperCase();
-  if (method === "GET" && isReadProtectedPath(url.pathname)) {
+  const needsReadHardware =
+    (method === "GET" && isReadProtectedPath(url.pathname)) ||
+    (method === "POST" && isReadCryptoPostPath(url.pathname));
+
+  if (needsReadHardware) {
     let res = await walletApi(path, init);
     if (res.status === 401) {
       const body = await parse401(res);

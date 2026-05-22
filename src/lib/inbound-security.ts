@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ARK_CLIENT_HEADER, ARK_CLIENT_VALUE } from "@/lib/ark-client";
+import { isReadProtectedPath } from "@/lib/webauthn/pending-op-paths";
 import {
   hostFromRequestHeader,
   isLoopbackHostname,
@@ -90,6 +91,27 @@ export function assertSameSiteFetch(request: NextRequest): NextResponse | null {
   return null;
 }
 
+/** Balance / history / address GETs require same-origin Sec-Fetch-Site in production. */
+export function assertStrictReadFetchSite(
+  request: NextRequest,
+): NextResponse | null {
+  const strict =
+    process.env.STRICT_FETCH_SITE === "true" ||
+    (process.env.NODE_ENV === "production" &&
+      process.env.RELAX_FETCH_SITE !== "true");
+  if (!strict) return null;
+  if (request.method !== "GET") return null;
+
+  const pathname = new URL(request.url).pathname;
+  if (!isReadProtectedPath(pathname)) return null;
+
+  const site = request.headers.get("sec-fetch-site")?.toLowerCase();
+  if (site !== "same-origin") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  return null;
+}
+
 /** Mutation requests must send same-origin Sec-Fetch-Site (default in production). */
 export function assertStrictFetchSite(request: NextRequest): NextResponse | null {
   const strict =
@@ -130,6 +152,7 @@ export function assertApiSecurity(request: NextRequest): NextResponse | null {
     assertArkClient(request) ??
     assertSameSiteFetch(request) ??
     assertStrictFetchSite(request) ??
+    assertStrictReadFetchSite(request) ??
     assertLocalOrigin(request)
   );
 }

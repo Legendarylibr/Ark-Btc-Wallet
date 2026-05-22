@@ -1,12 +1,8 @@
-type SetupTokenGlobal = typeof globalThis & {
-  __arkSetupTokens?: Map<
-    string,
-    { publicKeyB64: string; fingerprint: string; exp: number }
-  >;
-};
-
-const g = globalThis as SetupTokenGlobal;
-const tokens = g.__arkSetupTokens ??= new Map();
+import {
+  deleteSetupToken,
+  getSetupToken,
+  putSetupToken,
+} from "./setup-token-store";
 
 const TTL_MS = 10 * 60 * 1000;
 
@@ -15,7 +11,7 @@ export function issueSetupToken(
   fingerprint: string,
 ): string {
   const id = crypto.randomUUID();
-  tokens.set(id, {
+  putSetupToken(id, {
     publicKeyB64,
     fingerprint,
     exp: Date.now() + TTL_MS,
@@ -28,13 +24,8 @@ export function validateSetupToken(
   fingerprint: string,
 ): { publicKeyB64: string } | null {
   if (!token) return null;
-  const entry = tokens.get(token);
-  if (!entry) return null;
-  if (Date.now() > entry.exp) {
-    tokens.delete(token);
-    return null;
-  }
-  if (entry.fingerprint !== fingerprint) return null;
+  const entry = getSetupToken(token);
+  if (!entry || entry.fingerprint !== fingerprint) return null;
   return { publicKeyB64: entry.publicKeyB64 };
 }
 
@@ -44,6 +35,6 @@ export function consumeSetupToken(
 ): { publicKeyB64: string } | null {
   const valid = validateSetupToken(token, fingerprint);
   if (!valid) return null;
-  tokens.delete(token!);
+  deleteSetupToken(token!);
   return valid;
 }

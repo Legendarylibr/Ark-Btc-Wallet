@@ -42,6 +42,8 @@ Passkey (PRF) mode requires a **recovery passphrase** at create. Pay / Secure / 
 - Loopback Host/Origin, `x-ark-client`, block `Sec-Fetch-Site: cross-site` and `Sec-Fetch-Dest: document` on API POSTs
 - Production mutations require `Sec-Fetch-Site: same-origin` (override with `RELAX_FETCH_SITE=true`)
 - Balance / history / receive address require **recent WebAuthn** (same window as auto-lock)
+- `POST /api/wallet/sync` only triggers barkd sync — **no balance in the response** (use read-protected GET balance)
+- Register challenges and setup tokens persist encrypted on disk (survive restart)
 - Persisted pending ops, WebAuthn challenges, and rate limits across restarts
 - Session binding (IP + User-Agent); **destroy session** on binding mismatch
 - Server session **8h max** + **30 min idle** (re-unlock required)

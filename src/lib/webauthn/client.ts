@@ -13,7 +13,7 @@ import type {
 import type { UnlockedIdentity } from "@/lib/crypto/vault";
 import { arkClientHeaders } from "@/lib/ark-client";
 import { bytesToBase64, sign } from "@/lib/crypto/ed25519";
-import { webauthnSetupMessage } from "@/lib/crypto/challenges";
+import { webauthnSetupMessage } from "@/lib/crypto/challenge-messages";
 import {
   HARDWARE_AUTH_HEADER,
   PENDING_OP_HEADER,
