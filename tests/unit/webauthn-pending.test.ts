@@ -5,6 +5,7 @@ import {
   invalidatePendingOp,
   matchesPendingOp,
   pendingOpTypeForPath,
+  VALID_PENDING_OP_TYPES,
 } from "@/lib/webauthn/pending-op";
 import { HARDWARE_REQUIRED_PATHS } from "@/lib/webauthn/constants";
 
@@ -26,6 +27,7 @@ describe("webauthn pending-op", () => {
 
   it("maps API paths to op types", () => {
     expect(HARDWARE_REQUIRED_PATHS.size).toBe(4);
+    expect(VALID_PENDING_OP_TYPES).toContain("read-access");
     expect(pendingOpTypeForPath("/api/wallet/send/estimate", "")).toBe("send");
     expect(pendingOpTypeForPath("/api/wallet/send", "")).toBe("send");
     expect(pendingOpTypeForPath("/api/wallet/refresh", "")).toBe("refresh");

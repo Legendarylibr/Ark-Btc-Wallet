@@ -2,50 +2,104 @@
 
 import { signedFetch } from "@/lib/signed-fetch";
 import { useCryptoStore } from "@/store/crypto";
-import { createPendingOp, hardwareAuthHeaders } from "@/lib/webauthn/client";
+import {
+  createPendingOp,
+  hardwareAuthHeaders,
+} from "@/lib/webauthn/client";
 import { hashBody } from "@/lib/crypto/canonical";
-import { pendingOpTypeForPath } from "@/lib/webauthn/pending-op";
+import {
+  isReadProtectedPath,
+  pendingOpTypeForPath,
+  type PendingOpType,
+} from "@/lib/webauthn/pending-op-paths";
 
 export class WalletApiError extends Error {
   constructor(
     message: string,
     public status: number,
+    public code?: string,
   ) {
     super(message);
     this.name = "WalletApiError";
   }
 }
 
-/** Signed wallet API call; locks app on 401 */
+async function parse401(
+  res: Response,
+): Promise<{ error?: string; code?: string }> {
+  try {
+    return (await res.json()) as { error?: string; code?: string };
+  } catch {
+    return {};
+  }
+}
+
+function getIdentity() {
+  try {
+    return useCryptoStore.getState().getIdentity();
+  } catch {
+    throw new WalletApiError("Wallet locked — unlock to continue", 401);
+  }
+}
+
+/** Signed wallet API call; locks app on session expiry (not on read-hardware refresh). */
 export async function walletApi(
   path: string,
   init: RequestInit = {},
 ): Promise<Response> {
-  let identity;
-  try {
-    identity = useCryptoStore.getState().getIdentity();
-  } catch {
-    throw new WalletApiError("Wallet locked — unlock to continue", 401);
-  }
-
+  const identity = getIdentity();
   const res = await signedFetch(identity, path, init);
 
   if (res.status === 401) {
-    await useCryptoStore.getState().lock();
-    let msg = "Session expired — unlock again";
-    try {
-      const body = await res.json();
-      if (body.error) msg = body.error;
-    } catch {
-      /* ignore */
+    const body = await parse401(res);
+    if (body.code === "HARDWARE_READ_REQUIRED") {
+      return res;
     }
-    throw new WalletApiError(msg, 401);
+    await useCryptoStore.getState().lock();
+    throw new WalletApiError(
+      body.error ?? "Session expired — unlock again",
+      401,
+      body.code,
+    );
   }
 
   return res;
 }
 
-/** Pay / Secure / rotate address — hardware + operation binding */
+async function startPendingOp(
+  type: PendingOpType,
+  bodyHash: string,
+): Promise<string> {
+  const identity = getIdentity();
+  return createPendingOp(type, bodyHash, (p, i) => signedFetch(identity, p, i));
+}
+
+/** Refresh read-access window (balance / history / address). */
+async function walletApiWithReadAccess(
+  path: string,
+  init: RequestInit = {},
+): Promise<Response> {
+  const emptyHash = hashBody("");
+  const opId = await startPendingOp("read-access", emptyHash);
+  const hwHeaders = await hardwareAuthHeaders(opId);
+  const headers = new Headers(init.headers);
+  for (const [k, v] of Object.entries(hwHeaders)) {
+    headers.set(k, v);
+  }
+  const res = await walletApi(path, { ...init, headers });
+  if (res.status === 401) {
+    const body = await parse401(res);
+    await useCryptoStore.getState().lock();
+    throw new WalletApiError(
+      body.error ?? "Session expired — unlock again",
+      401,
+      body.code,
+    );
+  }
+  return res;
+}
+
+/** Pay / Secure / rotate / estimate — hardware + operation binding */
 export async function walletApiWithHardware(
   path: string,
   init: RequestInit = {},
@@ -64,37 +118,8 @@ export async function walletApiWithHardware(
         : "";
 
   const bodyHash = hashBody(bodyText);
-
-  let identity;
-  try {
-    identity = useCryptoStore.getState().getIdentity();
-  } catch {
-    throw new WalletApiError("Wallet locked — unlock to continue", 401);
-  }
-
-  let opId: string;
-  try {
-    opId = await createPendingOp(opType, bodyHash, (p, i) =>
-      signedFetch(identity, p, i),
-    );
-  } catch (e) {
-    throw new WalletApiError(
-      e instanceof Error ? e.message : "Could not start secured operation",
-      400,
-    );
-  }
-
-  let hwHeaders: Record<string, string>;
-  try {
-    hwHeaders = await hardwareAuthHeaders(opId);
-  } catch (e) {
-    throw new WalletApiError(
-      e instanceof Error
-        ? e.message
-        : "Device confirmation failed — try again",
-      401,
-    );
-  }
+  const opId = await startPendingOp(opType, bodyHash);
+  const hwHeaders = await hardwareAuthHeaders(opId);
   const headers = new Headers(init.headers);
   for (const [k, v] of Object.entries(hwHeaders)) {
     headers.set(k, v);
@@ -103,23 +128,42 @@ export async function walletApiWithHardware(
   return walletApi(path, { ...init, headers });
 }
 
+async function walletApiForPath(
+  path: string,
+  init: RequestInit = {},
+): Promise<Response> {
+  const url = new URL(path, window.location.origin);
+  const sensitive = pendingOpTypeForPath(url.pathname, url.search);
+  if (sensitive) {
+    return walletApiWithHardware(path, init);
+  }
+
+  const method = (init.method ?? "GET").toUpperCase();
+  if (method === "GET" && isReadProtectedPath(url.pathname)) {
+    let res = await walletApi(path, init);
+    if (res.status === 401) {
+      const body = await parse401(res);
+      if (body.code === "HARDWARE_READ_REQUIRED") {
+        res = await walletApiWithReadAccess(path, init);
+      }
+    }
+    return res;
+  }
+
+  return walletApi(path, init);
+}
+
 export async function walletApiJson<T>(
   path: string,
   init: RequestInit = {},
 ): Promise<T> {
-  const url = new URL(path, window.location.origin);
-  const needsHardware =
-    pendingOpTypeForPath(url.pathname, url.search) != null;
-
-  const res = needsHardware
-    ? await walletApiWithHardware(path, init)
-    : await walletApi(path, init);
-
+  const res = await walletApiForPath(path, init);
   const data = await res.json();
   if (!res.ok) {
     throw new WalletApiError(
       (data as { error?: string }).error ?? "Request failed",
       res.status,
+      (data as { code?: string }).code,
     );
   }
   return data as T;
@@ -135,6 +179,7 @@ export async function walletApiJsonWithHardware<T>(
     throw new WalletApiError(
       (data as { error?: string }).error ?? "Request failed",
       res.status,
+      (data as { code?: string }).code,
     );
   }
   return data as T;

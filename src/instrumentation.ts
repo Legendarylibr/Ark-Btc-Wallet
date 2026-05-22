@@ -43,8 +43,15 @@ export async function register() {
     process.env.WALLET_BACKEND ??
     "barkd";
   if (backend !== "sdk" && !process.env.BARKD_AUTH_TOKEN) {
-    console.error(
-      "[ark-wallet] WARNING: BARKD_AUTH_TOKEN unset — any local process can call barkd directly. Configure barkd auth when supported.",
-    );
+    if (process.env.ALLOW_INSECURE_BARKD === "true") {
+      console.error(
+        "[ark-wallet] WARNING: ALLOW_INSECURE_BARKD=true — barkd has no auth token; local processes may bypass the UI.",
+      );
+    } else {
+      console.error(
+        "[ark-wallet] FATAL: BARKD_AUTH_TOKEN is required in production (barkd mode). Set ALLOW_INSECURE_BARKD=true only for signet/dev without barkd auth.",
+      );
+      process.exit(1);
+    }
   }
 }

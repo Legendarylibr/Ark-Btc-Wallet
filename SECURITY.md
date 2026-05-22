@@ -40,7 +40,9 @@ Passkey (PRF) mode requires a **recovery passphrase** at create. Pay / Secure / 
 - Middleware rejects malformed session cookies / nonces before handlers run
 - Server WebAuthn on unlock, pay, fee estimate, secure, rotate (pending-op body binding + credential ID match)
 - Loopback Host/Origin, `x-ark-client`, block `Sec-Fetch-Site: cross-site` and `Sec-Fetch-Dest: document` on API POSTs
-- Optional `STRICT_FETCH_SITE=true` — mutations must send `Sec-Fetch-Site: same-origin`
+- Production mutations require `Sec-Fetch-Site: same-origin` (override with `RELAX_FETCH_SITE=true`)
+- Balance / history / receive address require **recent WebAuthn** (same window as auto-lock)
+- Persisted pending ops, WebAuthn challenges, and rate limits across restarts
 - Session binding (IP + User-Agent); **destroy session** on binding mismatch
 - Server session **8h max** + **30 min idle** (re-unlock required)
 - API body cap **64 KiB**; `TRACE`/`TRACK` blocked
@@ -48,7 +50,7 @@ Passkey (PRF) mode requires a **recovery passphrase** at create. Pay / Secure / 
 - Client auto-lock after 5 minutes idle
 - Pubkey pin per barkd fingerprint; setup token anti-squat for WebAuthn register
 
-Hardware gates the **web UI**, not barkd itself — set `BARKD_AUTH_TOKEN` when barkd supports it.
+Hardware gates the **web UI**, not barkd itself — **`BARKD_AUTH_TOKEN` is required in production** (barkd mode) unless `ALLOW_INSECURE_BARKD=true` for signet-only dev.
 
 ## barkd bypass (out of scope for this app)
 

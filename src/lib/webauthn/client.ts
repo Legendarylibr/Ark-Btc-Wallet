@@ -20,7 +20,7 @@ import {
   SETUP_TOKEN_HEADER,
 } from "@/lib/webauthn/constants";
 import { unlockVault, loadVaultFromStorage, zeroize } from "@/lib/crypto/vault";
-import type { PendingOpType } from "@/lib/webauthn/pending-op";
+import type { PendingOpType } from "@/lib/webauthn/pending-op-paths";
 
 async function apiJson<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {

@@ -6,6 +6,7 @@ import {
 } from "@/lib/encrypted-file";
 import {
   MAX_CLOCK_SKEW_MS,
+  READ_HARDWARE_TTL_MS,
   SERVER_SESSION_IDLE_MS,
   SERVER_SESSION_TTL_MS,
 } from "@/lib/security/constants";
@@ -20,6 +21,7 @@ export interface WalletSession {
   clientIpHash: string | null;
   createdAt: number;
   lastSeenAt: number;
+  lastHardwareAt: number | null;
 }
 
 interface StoredSession {
@@ -29,6 +31,7 @@ interface StoredSession {
   clientIpHash?: string | null;
   createdAt: number;
   lastSeenAt: number;
+  lastHardwareAt?: number | null;
 }
 
 interface SessionFile {
@@ -76,6 +79,7 @@ function getMap(): Map<string, WalletSession> {
         clientIpHash: s.clientIpHash ?? null,
         createdAt: s.createdAt,
         lastSeenAt: s.lastSeenAt,
+        lastHardwareAt: s.lastHardwareAt ?? null,
       });
     }
   }
@@ -93,6 +97,7 @@ function persist(): void {
       clientIpHash: s.clientIpHash,
       createdAt: s.createdAt,
       lastSeenAt: s.lastSeenAt,
+      lastHardwareAt: s.lastHardwareAt,
     };
   }
   saveFile({ v: 1, sessions });
@@ -118,13 +123,15 @@ export function createSession(
 ): WalletSession {
   prune();
   const id = crypto.randomUUID();
+  const now = Date.now();
   const session: WalletSession = {
     id,
     publicKey: base64ToBytes(publicKeyB64),
     barkFingerprint,
     clientIpHash,
-    createdAt: Date.now(),
-    lastSeenAt: Date.now(),
+    createdAt: now,
+    lastSeenAt: now,
+    lastHardwareAt: now,
   };
   getMap().set(id, session);
   persist();
@@ -183,4 +190,18 @@ export function ensureSessionClientBinding(
 export function isTimestampValid(timestampMs: number): boolean {
   const now = Date.now();
   return Math.abs(now - timestampMs) <= MAX_CLOCK_SKEW_MS;
+}
+
+export function touchSessionHardware(sessionId: string): void {
+  const s = getMap().get(sessionId);
+  if (s) {
+    s.lastHardwareAt = Date.now();
+    persist();
+  }
+}
+
+export function isHardwareFreshForRead(sessionId: string): boolean {
+  const s = getSession(sessionId);
+  if (!s?.lastHardwareAt) return false;
+  return Date.now() - s.lastHardwareAt <= READ_HARDWARE_TTL_MS;
 }

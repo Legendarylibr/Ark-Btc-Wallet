@@ -2,7 +2,10 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import type { AuthenticationResponseJSON } from "@simplewebauthn/server";
 import { hashBody } from "@/lib/crypto/canonical";
-import { getSession } from "@/lib/crypto/session-store";
+import {
+  getSession,
+  touchSessionHardware,
+} from "@/lib/crypto/session-store";
 import { SESSION_COOKIE } from "@/lib/crypto/cookie";
 import { verifyHardwareAuthentication } from "./verify";
 import {
@@ -94,7 +97,25 @@ async function assertHardwareAuthWithType(
     return NextResponse.json({ error: pendingMismatchError }, { status: 401 });
   }
 
+  const sessionId = request.cookies.get(SESSION_COOKIE)?.value;
+  if (sessionId) touchSessionHardware(sessionId);
+
   return null;
+}
+
+export async function assertHardwareAuthForRead(
+  request: NextRequest,
+  fingerprint: string,
+  bodyHash: string,
+): Promise<NextResponse | null> {
+  return assertHardwareAuthWithType(
+    request,
+    fingerprint,
+    bodyHash,
+    "read-access",
+    "Hardware confirmation required to view wallet data",
+    "Read confirmation expired — try again",
+  );
 }
 
 export async function assertHardwareAuth(

@@ -1,23 +1,26 @@
-type ChallengeGlobal = typeof globalThis & {
-  __arkWebAuthnChallenges?: Map<string, number>;
-};
+import {
+  claimExpiringKey,
+  deleteExpiringKey,
+  hasExpiringKey,
+} from "@/lib/persisted-scoped-store";
 
-const g = globalThis as ChallengeGlobal;
-const challenges = g.__arkWebAuthnChallenges ??= new Map<string, number>();
-
+const STORE = "webauthn-challenges";
 const TTL_MS = 5 * 60 * 1000;
 
+function challengeKey(scope: string, challenge: string): string {
+  return `${scope}:${challenge}`;
+}
+
 export function storeWebAuthnChallenge(scope: string, challenge: string): void {
-  challenges.set(`${scope}:${challenge}`, Date.now() + TTL_MS);
+  claimExpiringKey(STORE, challengeKey(scope, challenge), TTL_MS);
 }
 
 export function consumeWebAuthnChallenge(
   scope: string,
   challenge: string,
 ): boolean {
-  const key = `${scope}:${challenge}`;
-  const exp = challenges.get(key);
-  if (!exp) return false;
-  challenges.delete(key);
-  return Date.now() <= exp;
+  const key = challengeKey(scope, challenge);
+  if (!hasExpiringKey(STORE, key)) return false;
+  deleteExpiringKey(STORE, key);
+  return true;
 }
