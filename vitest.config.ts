@@ -9,6 +9,8 @@ export default defineConfig({
     include: ["tests/**/*.test.ts"],
     testTimeout: 15_000,
     pool: "forks",
+    /** Server persistence tests share `WALLET_DATA_DIR` — avoid cross-file races. */
+    fileParallelism: false,
   },
   resolve: {
     alias: {
