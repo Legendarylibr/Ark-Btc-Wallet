@@ -10,7 +10,6 @@ const HEALTH_POLL_MS = 5_000;
 export function useWallet() {
   const store = useWalletStore();
   const onboarded = store.onboarded;
-  const onboardedForPoll = store.onboarded;
   const cryptoReady = useCryptoStore(
     (s) => s.identity != null && s.sessionRegistered,
   );
@@ -20,12 +19,12 @@ export function useWallet() {
   }, []);
 
   useEffect(() => {
-    if (onboardedForPoll) return;
+    if (onboarded) return;
     const id = setInterval(() => {
       useWalletStore.getState().fetchHealth();
     }, HEALTH_POLL_MS);
     return () => clearInterval(id);
-  }, [onboardedForPoll]);
+  }, [onboarded]);
 
   useEffect(() => {
     if (!onboarded || !cryptoReady) return;
