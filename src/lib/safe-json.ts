@@ -10,9 +10,14 @@ export function safeParseJson<T>(
   }
 }
 
+import { MAX_API_BODY_BYTES } from "@/lib/security/constants";
+
 export function parseJsonBody<T extends object>(
   bodyText: string,
 ): { ok: true; data: T } | { ok: false; error: string } {
+  if (bodyText.length > MAX_API_BODY_BYTES) {
+    return { ok: false, error: "Request body too large" };
+  }
   if (!bodyText.trim()) {
     return { ok: false, error: "Request body required" };
   }

@@ -7,6 +7,8 @@ import {
   assertSetupAllowedForFingerprint,
   verifyWebauthnSetupProof,
 } from "@/lib/webauthn/setup-proof";
+import { parseJsonBody } from "@/lib/safe-json";
+import { readLimitedBody } from "@/lib/security/request-limits";
 
 export async function POST(req: NextRequest) {
   const block = assertApiSecurity(req);
@@ -17,16 +19,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
+  const raw = await readLimitedBody(req);
+  if (!raw.ok) return raw.response;
+
   try {
-    const body = (await req.json()) as {
+    const parsed = parseJsonBody<{
       publicKey?: string;
       challenge?: string;
       signature?: string;
       timestamp?: number;
       nonce?: string;
-    };
+    }>(raw.text);
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
 
-    const proof = await verifyWebauthnSetupProof(body);
+    const proof = await verifyWebauthnSetupProof(parsed.data);
     if (!proof.ok) {
       rateLimit(`webauthn-setup-fail:${ip}`, 8, 15 * 60 * 1000);
       return NextResponse.json({ error: proof.error }, { status: 401 });

@@ -43,7 +43,7 @@ const guardedRotate = withSensitiveCryptoGuard(async (req, _bodyText) =>
 export async function GET(req: NextRequest) {
   const rotate = req.nextUrl.searchParams.get("rotate") === "1";
   if (rotate) {
-    return guardedRotate(req, "");
+    return guardedRotate(req);
   }
-  return guardedRead(req, "");
+  return guardedRead(req);
 }

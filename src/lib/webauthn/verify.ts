@@ -57,6 +57,11 @@ export async function verifyHardwareRegistration(
     }
 
     const { credential, credentialDeviceType } = verification.registrationInfo;
+
+    if (response.id !== credential.id) {
+      return { ok: false, error: "Hardware credential mismatch" };
+    }
+
     const saved = saveWebAuthnCredential(fingerprint, {
       credentialId: credential.id,
       publicKey: Buffer.from(credential.publicKey).toString("base64"),
@@ -84,6 +89,10 @@ export async function verifyHardwareAuthentication(
   const stored = getWebAuthnCredential(fingerprint);
   if (!stored) {
     return { ok: false, error: "No hardware key registered for this wallet" };
+  }
+
+  if (response.id !== stored.credentialId) {
+    return { ok: false, error: "Hardware credential mismatch" };
   }
 
   if (!consumeChallenge(`auth:${fingerprint}:${opId}`, expectedChallenge)) {

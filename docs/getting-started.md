@@ -79,7 +79,7 @@ Fees are estimated conservatively from barkd’s Ark fee tiers before send.
 
 ## Production notes
 
-- Set `SESSION_SECRET` to a long random string (≥16 chars). See [Configuration](configuration.md).
+- Set `SESSION_SECRET` to a long random string (≥32 chars). See [Configuration](configuration.md).
 - Run `npm run build && npm run start` — still binds `127.0.0.1`.
 - Read [SECURITY.md](../SECURITY.md) before exposing anything beyond localhost.
 

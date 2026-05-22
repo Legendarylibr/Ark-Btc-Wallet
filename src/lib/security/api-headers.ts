@@ -8,6 +8,8 @@ export function withApiSecurityHeaders(response: NextResponse): NextResponse {
   response.headers.set("Cache-Control", API_CACHE);
   response.headers.set("Pragma", API_PRAGMA);
   response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   return response;
 }
 

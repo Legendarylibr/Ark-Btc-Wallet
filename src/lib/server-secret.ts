@@ -1,6 +1,8 @@
 import { scryptSync } from "node:crypto";
+import { MIN_SESSION_SECRET_LENGTH } from "@/lib/security/constants";
 
 const SALT = "ark-wallet-server-v1";
+const DEV_MIN_SECRET_LENGTH = 16;
 
 export function getServerSecretKey(): Buffer {
   const secret =
@@ -8,13 +10,18 @@ export function getServerSecretKey(): Buffer {
     process.env.WALLET_DATA_SECRET ??
     "";
 
-  if (secret.length >= 16) {
+  const minLen =
+    process.env.NODE_ENV === "production"
+      ? MIN_SESSION_SECRET_LENGTH
+      : DEV_MIN_SECRET_LENGTH;
+
+  if (secret.length >= minLen) {
     return scryptSync(secret, SALT, 32);
   }
 
   if (process.env.NODE_ENV === "production") {
     throw new Error(
-      "SESSION_SECRET (min 16 chars) is required in production — set in .env.local",
+      `SESSION_SECRET (min ${MIN_SESSION_SECRET_LENGTH} chars) is required in production — set in .env.local`,
     );
   }
 

@@ -4,6 +4,11 @@ import {
   readEncryptedFile,
   writeEncryptedFile,
 } from "@/lib/encrypted-file";
+import {
+  MAX_CLOCK_SKEW_MS,
+  SERVER_SESSION_IDLE_MS,
+  SERVER_SESSION_TTL_MS,
+} from "@/lib/security/constants";
 import { base64ToBytes, bytesToBase64 } from "./ed25519";
 
 export { SESSION_COOKIE } from "./cookie";
@@ -31,8 +36,7 @@ interface SessionFile {
   sessions: Record<string, StoredSession>;
 }
 
-const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
-const MAX_CLOCK_SKEW_MS = 5 * 60 * 1000;
+const SESSION_TTL_MS = SERVER_SESSION_TTL_MS;
 
 const EMPTY_FILE: SessionFile = { v: 1, sessions: {} };
 
@@ -131,7 +135,13 @@ export function getSession(id: string): WalletSession | null {
   prune();
   const s = getMap().get(id);
   if (!s) return null;
-  if (Date.now() - s.lastSeenAt > SESSION_TTL_MS) {
+  const now = Date.now();
+  if (now - s.createdAt > SESSION_TTL_MS) {
+    getMap().delete(id);
+    persist();
+    return null;
+  }
+  if (now - s.lastSeenAt > SERVER_SESSION_IDLE_MS) {
     getMap().delete(id);
     persist();
     return null;

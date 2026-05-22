@@ -20,6 +20,7 @@ import { barkd } from "@/lib/barkd";
 import { hasWebAuthnCredential } from "@/lib/webauthn/store";
 import { assertHardwareAuthForRegister } from "@/lib/webauthn/hardware-guard";
 import { parseJsonBody } from "@/lib/safe-json";
+import { readLimitedBody } from "@/lib/security/request-limits";
 import { recordUnlockFailure } from "@/lib/crypto/unlock-rate-limit";
 
 export async function POST(req: NextRequest) {
@@ -31,7 +32,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
-  const bodyText = await req.text();
+  const body = await readLimitedBody(req);
+  if (!body.ok) return body.response;
+  const bodyText = body.text;
 
   try {
     const parsed = parseJsonBody<{
