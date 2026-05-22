@@ -168,22 +168,14 @@ export function destroySession(id: string): void {
   if (getMap().delete(id)) persist();
 }
 
-/**
- * Bind session to client on first use; reject if binding changes later.
- * Migrates legacy sessions that were created without clientIpHash.
- */
+/** Reject if session was created without binding or client fingerprint changed. */
 export function ensureSessionClientBinding(
   sessionId: string,
   binding: string,
 ): "ok" | "missing" | "mismatch" {
   const s = getMap().get(sessionId);
   if (!s) return "missing";
-  if (!s.clientIpHash) {
-    s.clientIpHash = binding;
-    persist();
-    return "ok";
-  }
-  if (s.clientIpHash !== binding) return "mismatch";
+  if (!s.clientIpHash || s.clientIpHash !== binding) return "mismatch";
   return "ok";
 }
 
