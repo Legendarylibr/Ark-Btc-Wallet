@@ -49,7 +49,7 @@ npm run vendor:bark-wasm
 npm run build:bark-wasm
 ```
 
-These use Node scripts (`scripts/*.mjs`) — no Bash required.
+These use TypeScript scripts (`scripts/*.ts`, run with `tsx`) — no Bash required.
 
 ## WebAuthn / passkeys
 
@@ -87,6 +87,6 @@ GitHub Actions runs **lint**, **test**, and **build** on Ubuntu, Windows, and ma
 
 - **“barkd not reachable” on Windows + WSL** — run `barkd` in WSL; keep `BARKD_URL=http://127.0.0.1:3535`.
 - **WebAuthn fails after switching host** — stay on `127.0.0.1:3000` or `localhost:3000`, not both across sessions.
-- **Scripts fail on Windows** — use Node 20+ from [nodejs.org](https://nodejs.org); avoid legacy `bash`-only workflows (removed in favor of `*.mjs`).
+- **Scripts fail on Windows** — use Node 20+ from [nodejs.org](https://nodejs.org); run `npm run vendor:bark-wasm` etc. (TypeScript via `tsx`).
 
 See [troubleshooting.md](troubleshooting.md) for more.

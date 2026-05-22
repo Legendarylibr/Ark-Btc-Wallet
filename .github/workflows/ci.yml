@@ -35,6 +35,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+          cache: npm
+      - run: npm ci
       - run: npm run fv:extract
       - run: git diff --exit-code lean/ArkWallet/FvFixtures.lean
       - uses: leanprover/lean-action@v1

@@ -2,31 +2,13 @@
 /**
  * Cross-platform: wasm-pack build for SDK mode.
  */
-import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { repoRoot, run, which } from "./lib/process";
 
-const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
+const ROOT = repoRoot();
 const WASM_DIR = path.join(ROOT, "packages", "bark-wasm");
 const RUST_DIR = path.join(WASM_DIR, "rust");
-
-function which(cmd) {
-  const check = process.platform === "win32" ? "where" : "which";
-  const r = spawnSync(check, [cmd], { shell: true, encoding: "utf8" });
-  return r.status === 0;
-}
-
-function run(cmd, args, cwd) {
-  const result = spawnSync(cmd, args, {
-    stdio: "inherit",
-    cwd,
-    shell: process.platform === "win32",
-  });
-  if (result.status !== 0) {
-    process.exit(result.status ?? 1);
-  }
-}
 
 if (!fs.existsSync(RUST_DIR)) {
   console.error(
@@ -61,7 +43,7 @@ run(
     "bark",
     "--release",
   ],
-  WASM_DIR,
+  { cwd: WASM_DIR },
 );
 
 console.log("Built packages/bark-wasm/pkg/bundler — run npm install at repo root");
