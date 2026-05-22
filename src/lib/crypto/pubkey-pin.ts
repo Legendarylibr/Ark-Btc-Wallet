@@ -1,5 +1,6 @@
 import path from "path";
 import { getWalletDataDir } from "@/lib/data-dir";
+import { constantTimeEqualString } from "./secure-compare";
 import {
   readEncryptedFile,
   writeEncryptedFile,
@@ -46,7 +47,7 @@ export function verifyOrPinPubkey(
     return { ok: true, firstPin: true };
   }
 
-  if (existing !== publicKeyB64) {
+  if (!constantTimeEqualString(existing, publicKeyB64)) {
     return {
       ok: false,
       reason:

@@ -7,6 +7,7 @@ Copy [.env.example](../.env.example) to `.env.local` for local development.
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `NEXT_PUBLIC_WALLET_BACKEND` | `barkd` | `barkd` (recommended) or `sdk` (browser WASM). Public — baked into client bundle. |
+| `ALLOW_SDK_IN_PRODUCTION` | `false` | Must be `true` to run `npm run start` with SDK backend in production. |
 | `BARKD_URL` | `http://127.0.0.1:3535` | barkd REST base URL. **Must be loopback** — enforced at runtime. |
 | `SESSION_SECRET` | — | **Required in production** (≥32 random chars). Encrypts `.ark-wallet-data/*`. |
 | `STRICT_FETCH_SITE` | prod default | Force `Sec-Fetch-Site: same-origin` on mutations (also default in production). |

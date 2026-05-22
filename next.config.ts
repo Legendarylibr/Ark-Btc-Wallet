@@ -15,22 +15,6 @@ const securityHeaders = [
     value:
       "camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()",
   },
-  {
-    key: "Content-Security-Policy",
-    value: [
-      "default-src 'self'",
-      process.env.NEXT_PUBLIC_WALLET_BACKEND === "sdk"
-        ? "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'"
-        : "script-src 'self' 'unsafe-inline'",
-      "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data:",
-      "connect-src 'self'",
-      "object-src 'none'",
-      "form-action 'self'",
-      "frame-ancestors 'none'",
-      "base-uri 'self'",
-    ].join("; "),
-  },
 ];
 
 if (process.env.ENABLE_HSTS === "true") {
@@ -38,21 +22,6 @@ if (process.env.ENABLE_HSTS === "true") {
     key: "Strict-Transport-Security",
     value: "max-age=31536000; includeSubDomains",
   });
-  const csp = securityHeaders.find((h) => h.key === "Content-Security-Policy");
-  if (csp) {
-    csp.value += "; upgrade-insecure-requests";
-  }
-}
-
-const signetConnect =
-  "https://ark.signet.2nd.dev https://esplora.signet.2nd.dev";
-
-const cspEntry = securityHeaders.find((h) => h.key === "Content-Security-Policy");
-if (cspEntry && process.env.NEXT_PUBLIC_WALLET_BACKEND === "sdk") {
-  cspEntry.value = cspEntry.value.replace(
-    "connect-src 'self'",
-    `connect-src 'self' ${signetConnect}`,
-  );
 }
 
 const barkWasmBundler = path.join(

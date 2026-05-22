@@ -16,11 +16,10 @@ import {
 } from "@/lib/webauthn/pending-op-paths";
 import { isValidSessionId } from "@/lib/security/session-id";
 import { withApiSecurityHeaders } from "@/lib/security/api-headers";
+import { buildPageContentSecurityPolicy } from "@/lib/security/csp";
 
 const WALLET_API_PREFIX = "/api/wallet";
 const API_PREFIX = "/api/";
-/** Pre-session barkd readiness (no Ed25519 session). */
-const WALLET_PRESESSION_PATHS = new Set(["/api/wallet/ready"]);
 const MIN_SIG_LENGTH = 80;
 
 function apiNext(): NextResponse {
@@ -31,11 +30,22 @@ function apiReject(response: NextResponse): NextResponse {
   return withApiSecurityHeaders(response);
 }
 
-export function middleware(request: NextRequest) {
-  if (!request.nextUrl.pathname.startsWith(API_PREFIX)) {
-    return NextResponse.next();
-  }
+function pageResponse(request: NextRequest): NextResponse {
+  const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-nonce", nonce);
 
+  const response = NextResponse.next({
+    request: { headers: requestHeaders },
+  });
+  response.headers.set(
+    "Content-Security-Policy",
+    buildPageContentSecurityPolicy(nonce),
+  );
+  return response;
+}
+
+function handleApiMiddleware(request: NextRequest): NextResponse {
   const methodBlock = assertAllowedMethod(request);
   if (methodBlock) return apiReject(methodBlock);
 
@@ -53,12 +63,6 @@ export function middleware(request: NextRequest) {
 
   if (request.nextUrl.pathname.startsWith(WALLET_API_PREFIX)) {
     const pathname = request.nextUrl.pathname;
-    if (
-      request.method === "GET" &&
-      WALLET_PRESESSION_PATHS.has(pathname)
-    ) {
-      return apiNext();
-    }
     if (request.method === "GET" && isReadProtectedPath(pathname)) {
       const readBlock = assertStrictReadFetchSite(request);
       if (readBlock) return apiReject(readBlock);
@@ -107,6 +111,16 @@ export function middleware(request: NextRequest) {
   return apiNext();
 }
 
+export function middleware(request: NextRequest) {
+  if (request.nextUrl.pathname.startsWith(API_PREFIX)) {
+    return handleApiMiddleware(request);
+  }
+  return pageResponse(request);
+}
+
 export const config = {
-  matcher: "/api/:path*",
+  matcher: [
+    "/api/:path*",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
 };

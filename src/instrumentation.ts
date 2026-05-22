@@ -40,6 +40,12 @@ export async function register() {
   }
 
   if (process.env.NEXT_PUBLIC_WALLET_BACKEND === "sdk") {
+    if (process.env.ALLOW_SDK_IN_PRODUCTION !== "true") {
+      console.error(
+        "[ark-wallet] FATAL: SDK mode is not allowed in production without ALLOW_SDK_IN_PRODUCTION=true — see SECURITY.md.",
+      );
+      process.exit(1);
+    }
     console.error(
       "[ark-wallet] WARNING: SDK browser-wallet mode — different trust model than barkd; see SECURITY.md.",
     );
