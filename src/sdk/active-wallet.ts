@@ -16,7 +16,9 @@ export function setActiveSdkWallet(wallet: SdkWalletHandle | null): void {
   active = wallet;
 }
 
-export function getActiveSdkWallet(): SdkWalletHandle | null {
+/** Only the SDK store module should call into the active WASM handle. */
+export function requireActiveSdkWallet(): SdkWalletHandle {
+  if (!active) throw new Error("Wallet locked");
   return active;
 }
 

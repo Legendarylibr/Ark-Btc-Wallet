@@ -21,8 +21,15 @@ const READ_PROTECTED_PATHS = new Set([
   "/api/wallet/address",
 ]);
 
+/** POST routes gated like reads (no balance in response). */
+const READ_CRYPTO_POST_PATHS = new Set(["/api/wallet/sync"]);
+
 export function isReadProtectedPath(pathname: string): boolean {
   return READ_PROTECTED_PATHS.has(pathname);
+}
+
+export function isReadCryptoPostPath(pathname: string): boolean {
+  return READ_CRYPTO_POST_PATHS.has(pathname);
 }
 
 /** Maps wallet API paths to pending-op types (must match HARDWARE_REQUIRED_PATHS). */

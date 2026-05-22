@@ -12,7 +12,7 @@ import {
   zeroize,
 } from "@/lib/crypto/vault";
 import { bytesToBase64, sign } from "@/lib/crypto/ed25519";
-import { challengeMessage } from "@/lib/crypto/challenges";
+import { challengeMessage } from "@/lib/crypto/challenge-messages";
 import { hashBody } from "@/lib/crypto/canonical";
 import { arkClientHeaders } from "@/lib/ark-client";
 import { LOGOUT_HEADER } from "@/lib/crypto/cookie";
