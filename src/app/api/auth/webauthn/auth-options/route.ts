@@ -1,12 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateAuthenticationOptions } from "@simplewebauthn/server";
 import { assertApiSecurity } from "@/lib/inbound-security";
+import { isValidNonceUuid } from "@/lib/crypto/nonce-format";
 import { barkd } from "@/lib/barkd";
 import { getWebAuthnCredential } from "@/lib/webauthn/store";
 import { getWebAuthnConfig } from "@/lib/webauthn/config";
 import { storeWebAuthnChallenge } from "@/lib/webauthn/challenges";
-import { hasPendingOp } from "@/lib/webauthn/pending-op";
+import { getPendingOpDetails } from "@/lib/webauthn/pending-op";
+import { HARDWARE_AUTH_UNAVAILABLE } from "@/lib/webauthn/setup-gate";
 import { clientIp, rateLimit } from "@/lib/crypto/rate-limit";
+
+function hardwareAuthUnavailable(): NextResponse {
+  return NextResponse.json(
+    { error: HARDWARE_AUTH_UNAVAILABLE },
+    { status: 401 },
+  );
+}
 
 export async function GET(req: NextRequest) {
   const block = assertApiSecurity(req);
@@ -17,7 +26,7 @@ export async function GET(req: NextRequest) {
   }
 
   const opId = req.nextUrl.searchParams.get("opId");
-  if (!opId) {
+  if (!opId || !isValidNonceUuid(opId)) {
     return NextResponse.json(
       { error: "Missing operation id — confirm a specific action first" },
       { status: 400 },
@@ -25,24 +34,26 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const { fingerprint } = await barkd.walletStatus();
-    if (!fingerprint) {
-      return NextResponse.json({ error: "No barkd fingerprint" }, { status: 503 });
+    const pending = getPendingOpDetails(opId);
+    if (!pending) {
+      return hardwareAuthUnavailable();
     }
 
-    if (!hasPendingOp(opId, fingerprint)) {
-      return NextResponse.json(
-        { error: "No pending operation for this action" },
-        { status: 400 },
-      );
+    let fingerprint: string;
+    try {
+      const { fingerprint: fp } = await barkd.walletStatus();
+      fingerprint = fp ?? "";
+    } catch {
+      return hardwareAuthUnavailable();
+    }
+
+    if (!fingerprint || fingerprint !== pending.fingerprint) {
+      return hardwareAuthUnavailable();
     }
 
     const stored = getWebAuthnCredential(fingerprint);
     if (!stored) {
-      return NextResponse.json(
-        { error: "Register a hardware key first" },
-        { status: 400 },
-      );
+      return hardwareAuthUnavailable();
     }
 
     const { rpID } = getWebAuthnConfig(req);

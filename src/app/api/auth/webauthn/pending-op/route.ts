@@ -11,6 +11,7 @@ import {
   VALID_PENDING_OP_TYPES,
   type PendingOpType,
 } from "@/lib/webauthn/pending-op";
+import { PENDING_OP_UNAVAILABLE } from "@/lib/webauthn/setup-gate";
 import { SESSION_COOKIE } from "@/lib/crypto/cookie";
 import { clientIp, rateLimit } from "@/lib/crypto/rate-limit";
 
@@ -30,9 +31,21 @@ async function postHandler(
     return NextResponse.json({ error: "Invalid pending operation" }, { status: 400 });
   }
 
-  const { fingerprint } = await barkd.walletStatus();
-  if (!fingerprint) {
-    return NextResponse.json({ error: "No barkd fingerprint" }, { status: 503 });
+  let fingerprint: string;
+  try {
+    const { fingerprint: fp } = await barkd.walletStatus();
+    if (!fp) {
+      return NextResponse.json(
+        { error: PENDING_OP_UNAVAILABLE },
+        { status: 401 },
+      );
+    }
+    fingerprint = fp;
+  } catch {
+    return NextResponse.json(
+      { error: PENDING_OP_UNAVAILABLE },
+      { status: 401 },
+    );
   }
 
   const opId = createPendingOp(

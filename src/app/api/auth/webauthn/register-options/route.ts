@@ -8,6 +8,7 @@ import { storeWebAuthnChallenge } from "@/lib/webauthn/challenges";
 import { validateSetupToken } from "@/lib/crypto/setup-token";
 import { SETUP_TOKEN_HEADER } from "@/lib/webauthn/constants";
 import {
+  SETUP_CANNOT_CONTINUE,
   SETUP_VAULT_PROOF_REQUIRED,
 } from "@/lib/webauthn/setup-gate";
 import { clientIp, rateLimit } from "@/lib/crypto/rate-limit";
@@ -47,8 +48,8 @@ export async function GET(req: NextRequest) {
 
     if (hasWebAuthnCredential(fingerprint)) {
       return NextResponse.json(
-        { error: "Hardware key already registered" },
-        { status: 400 },
+        { error: SETUP_CANNOT_CONTINUE },
+        { status: 401 },
       );
     }
 
