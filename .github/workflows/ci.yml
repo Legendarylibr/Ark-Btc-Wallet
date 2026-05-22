@@ -24,4 +24,4 @@ jobs:
       - run: npm test
       - run: npm run build
         env:
-          SESSION_SECRET: ci-test-session-secret-min-16-chars
+          SESSION_SECRET: ci-test-session-secret-min-32-chars-long
