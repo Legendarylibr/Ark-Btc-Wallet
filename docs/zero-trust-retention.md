@@ -48,7 +48,7 @@ NEXT_PUBLIC_ARK_ZERO_RETENTION=true
 Effects:
 
 - Shorter server session idle (5 min), session max (2 h), nonce TTL (3 min), unlock window (10 min).
-- **Purge** all expired ephemeral server state on process start and on **logout**.
+- **Purge** all expired ephemeral server state on the **first API request** and on **logout**.
 - Browser clears receive-address cache and SDK `sessionStorage` pending ops / WebAuthn challenges on **lock** (when `NEXT_PUBLIC_ARK_ZERO_RETENTION=true`).
 
 Pins and WebAuthn credentials are **not** deleted automatically — reset `.ark-wallet-data` intentionally if re-pairing.

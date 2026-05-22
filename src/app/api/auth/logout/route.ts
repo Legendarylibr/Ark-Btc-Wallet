@@ -6,7 +6,7 @@ import {
   SESSION_COOKIE,
 } from "@/lib/crypto/cookie";
 import { destroySession } from "@/lib/crypto/session-store";
-import { purgeEphemeralServerData } from "@/lib/security/purge-ephemeral";
+import { purgeEphemeralServerData } from "@/lib/security/purge-ephemeral.server";
 
 export async function POST(req: NextRequest) {
   const block = assertApiSecurity(req);

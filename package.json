@@ -11,7 +11,14 @@
     "url": "https://github.com/Legendarylibr/Ark-Btc-Wallet/issues"
   },
   "homepage": "https://github.com/Legendarylibr/Ark-Btc-Wallet#readme",
-  "keywords": ["ark", "bitcoin", "wallet", "barkd", "signet", "webauthn"],
+  "keywords": [
+    "ark",
+    "bitcoin",
+    "wallet",
+    "barkd",
+    "signet",
+    "webauthn"
+  ],
   "engines": {
     "node": ">=20"
   },
@@ -46,6 +53,7 @@
     "qrcode.react": "^4.2.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "server-only": "^0.0.1",
     "tailwind-merge": "^3.3.0",
     "zustand": "^5.0.5"
   },

@@ -54,7 +54,7 @@ Passkey (PRF) mode requires a **recovery passphrase** at create. Pay / Secure / 
 - Production `SESSION_SECRET` min **32** chars; rejects known placeholders
 - Client auto-lock after 5 minutes idle
 - Pubkey pin per barkd fingerprint; setup token anti-squat for WebAuthn register
-- Optional **`ARK_ZERO_RETENTION=true`**: short TTLs + purge ephemeral server state on startup/logout (see [docs/zero-trust-retention.md](docs/zero-trust-retention.md))
+- Optional **`ARK_ZERO_RETENTION=true`**: short TTLs + purge ephemeral server state on first API request and logout (see [docs/zero-trust-retention.md](docs/zero-trust-retention.md))
 - No logging of request bodies, passphrases, or mnemonics
 
 Hardware gates the **web UI**, not barkd itself — **`BARKD_AUTH_TOKEN` is required in production** (barkd mode) unless `ALLOW_INSECURE_BARKD=true` for signet-only dev.

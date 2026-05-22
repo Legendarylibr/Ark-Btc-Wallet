@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { assertApiSecurity } from "@/lib/inbound-security";
 import { clientIp, rateLimit } from "@/lib/crypto/rate-limit";
 import { barkd } from "@/lib/barkd";
+import { ensureEphemeralPruned } from "@/lib/security/ephemeral-init.server";
 import { withMinResponseDelay } from "@/lib/security/min-response-delay";
 
 /** Daemon reachability only — does not reveal whether a barkd wallet file exists. */
 export async function GET(req: NextRequest) {
+  ensureEphemeralPruned();
   const block = assertApiSecurity(req);
   if (block) return block;
 

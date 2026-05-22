@@ -1,9 +1,7 @@
 import { MIN_SESSION_SECRET_LENGTH } from "@/lib/security/constants";
 import { isZeroRetentionMode } from "@/lib/security/retention-policy";
-import { purgeEphemeralServerData } from "@/lib/security/purge-ephemeral";
 
 export async function register() {
-  purgeEphemeralServerData();
   if (process.env.NODE_ENV !== "production") return;
 
   const secret =
@@ -37,7 +35,7 @@ export async function register() {
 
   if (isZeroRetentionMode()) {
     console.error(
-      "[ark-wallet] ARK_ZERO_RETENTION=true — short session/nonce TTLs; ephemeral purge on startup and logout.",
+      "[ark-wallet] ARK_ZERO_RETENTION=true — short session/nonce TTLs; ephemeral purge on first API request and logout.",
     );
   }
 

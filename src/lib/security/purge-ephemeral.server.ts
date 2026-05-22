@@ -1,3 +1,5 @@
+import "server-only";
+
 import { pruneNonceStore } from "@/lib/crypto/nonce-store";
 import { pruneRateLimitStore } from "@/lib/crypto/rate-limit";
 import { pruneExpiredSessions } from "@/lib/crypto/session-store";
