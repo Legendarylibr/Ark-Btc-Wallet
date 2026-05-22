@@ -3,7 +3,11 @@ import { hashClientBinding } from "@/lib/client-binding";
 import { assertApiSecurity } from "@/lib/inbound-security";
 import { verifyPreSessionRequest } from "@/lib/crypto/pre-session";
 import { consumeUnlockAttemptToken } from "@/lib/crypto/unlock-attempt-token";
-import { getPinnedPubkey } from "@/lib/crypto/pubkey-pin";
+import {
+  getFingerprintForPubkey,
+  getPinnedPubkey,
+  hasAnyPubkeyPin,
+} from "@/lib/crypto/pubkey-pin";
 import { constantTimeEqualString } from "@/lib/crypto/secure-compare";
 import { clientIp, rateLimit } from "@/lib/crypto/rate-limit";
 import { barkd } from "@/lib/barkd";
@@ -13,7 +17,7 @@ import { withMinResponseDelay } from "@/lib/security/min-response-delay";
 
 /**
  * Post-vault probe: unlock token + Ed25519 (vault signing key).
- * Before pairing: daemon reachability only. After pin: pinned pubkey + wallet file.
+ * First pairing: daemon reachability only (no walletStatus). After pin: wallet file check.
  */
 export async function POST(req: NextRequest) {
   const block = assertApiSecurity(req);
@@ -54,25 +58,40 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ ready: false });
       }
 
-      const { fingerprint } = await barkd.walletStatus();
-      if (!fingerprint) {
-        return NextResponse.json({ ready: false });
-      }
-
-      const pinned = getPinnedPubkey(fingerprint);
-      if (pinned) {
-        if (!constantTimeEqualString(pinned, pre.publicKeyB64)) {
+      const pairedFingerprint = getFingerprintForPubkey(pre.publicKeyB64);
+      if (!pairedFingerprint) {
+        if (!hasAnyPubkeyPin()) {
+          return NextResponse.json({ ready: true });
+        }
+        const { fingerprint } = await barkd.walletStatus();
+        const pinned = fingerprint ? getPinnedPubkey(fingerprint) : null;
+        if (pinned && !constantTimeEqualString(pinned, pre.publicKeyB64)) {
           return NextResponse.json(
             { error: "Signing key does not match paired device" },
             { status: 403 },
           );
         }
-        const ready = await barkd.walletExists();
-        return NextResponse.json({ ready });
+        return NextResponse.json({ ready: true });
       }
 
-      // First pairing: do not probe wallet file (register enforces it).
-      return NextResponse.json({ ready: true });
+      const pinned = getPinnedPubkey(pairedFingerprint);
+      if (
+        !pinned ||
+        !constantTimeEqualString(pinned, pre.publicKeyB64)
+      ) {
+        return NextResponse.json(
+          { error: "Signing key does not match paired device" },
+          { status: 403 },
+        );
+      }
+
+      const { fingerprint } = await barkd.walletStatus();
+      if (!fingerprint || fingerprint !== pairedFingerprint) {
+        return NextResponse.json({ ready: false });
+      }
+
+      const ready = await barkd.walletExists();
+      return NextResponse.json({ ready });
     } catch {
       return NextResponse.json({ ready: false });
     }

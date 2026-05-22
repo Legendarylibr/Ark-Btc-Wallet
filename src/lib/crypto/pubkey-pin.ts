@@ -62,6 +62,21 @@ export function getPinnedPubkey(fingerprint: string): string | null {
   return load().pins[fingerprint] ?? null;
 }
 
+export function hasAnyPubkeyPin(): boolean {
+  return Object.keys(load().pins).length > 0;
+}
+
+/** Reverse lookup — avoids barkd walletStatus on first pairing. */
+export function getFingerprintForPubkey(publicKeyB64: string): string | null {
+  const pins = load().pins;
+  for (const [fingerprint, pinned] of Object.entries(pins)) {
+    if (constantTimeEqualString(pinned, publicKeyB64)) {
+      return fingerprint;
+    }
+  }
+  return null;
+}
+
 export function clearPin(fingerprint: string): void {
   const data = load();
   delete data.pins[fingerprint];

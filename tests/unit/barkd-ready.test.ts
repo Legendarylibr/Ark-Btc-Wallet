@@ -73,7 +73,7 @@ describe("POST /api/auth/barkd-ready", () => {
     expect(res.status).toBe(401);
   });
 
-  it("does not call walletExists before pairing", async () => {
+  it("does not call walletStatus or walletExists before pairing", async () => {
     useTempWalletDataDir();
     const token = await issueUnlockToken();
     const { publicKey, privateKey } = await generateKeypair();
@@ -84,6 +84,7 @@ describe("POST /api/auth/barkd-ready", () => {
     });
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ready: true });
+    expect(barkd.walletStatus).not.toHaveBeenCalled();
     expect(barkd.walletExists).not.toHaveBeenCalled();
   });
 
@@ -105,6 +106,7 @@ describe("POST /api/auth/barkd-ready", () => {
     });
     expect(res.status).toBe(403);
     expect(barkd.walletExists).not.toHaveBeenCalled();
+    expect(barkd.walletStatus).toHaveBeenCalled();
   });
 
   it("checks wallet file when pinned pubkey matches", async () => {

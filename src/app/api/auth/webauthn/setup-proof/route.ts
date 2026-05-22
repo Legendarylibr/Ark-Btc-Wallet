@@ -7,8 +7,13 @@ import {
   assertSetupAllowedForFingerprint,
   verifyWebauthnSetupProof,
 } from "@/lib/webauthn/setup-proof";
+import { SETUP_PROOF_INCOMPLETE } from "@/lib/webauthn/setup-gate";
 import { parseJsonBody } from "@/lib/safe-json";
 import { readLimitedBody } from "@/lib/security/request-limits";
+
+function setupIncomplete(): NextResponse {
+  return NextResponse.json({ error: SETUP_PROOF_INCOMPLETE }, { status: 401 });
+}
 
 export async function POST(req: NextRequest) {
   const block = assertApiSecurity(req);
@@ -40,12 +45,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: proof.error }, { status: 401 });
     }
 
-    if (!(await barkd.walletExists())) {
-      return NextResponse.json({ error: "barkd wallet required" }, { status: 503 });
-    }
-    const { fingerprint } = await barkd.walletStatus();
-    if (!fingerprint) {
-      return NextResponse.json({ error: "No barkd fingerprint" }, { status: 503 });
+    let fingerprint: string;
+    try {
+      const { fingerprint: fp } = await barkd.walletStatus();
+      if (!fp || !(await barkd.walletExists())) {
+        return setupIncomplete();
+      }
+      fingerprint = fp;
+    } catch {
+      return setupIncomplete();
     }
 
     const allowed = assertSetupAllowedForFingerprint(
