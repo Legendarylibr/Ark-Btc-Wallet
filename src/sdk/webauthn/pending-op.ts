@@ -11,6 +11,7 @@ export interface SdkPendingOperation {
 
 const ops = new Map<string, SdkPendingOperation>();
 const TTL_MS = 2 * 60 * 1000;
+const STORAGE_KEY = "sdk-pending-ops";
 
 function prune(): void {
   const now = Date.now();
@@ -18,6 +19,32 @@ function prune(): void {
     if (now > op.exp) ops.delete(id);
   }
 }
+
+function persist(): void {
+  try {
+    const entries: Record<string, SdkPendingOperation> = {};
+    for (const [id, op] of ops) entries[id] = op;
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  } catch {
+    /* quota / private mode */
+  }
+}
+
+function loadFromSession(): void {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const entries = JSON.parse(raw) as Record<string, SdkPendingOperation>;
+    const now = Date.now();
+    for (const [id, op] of Object.entries(entries)) {
+      if (now <= op.exp) ops.set(id, op);
+    }
+  } catch {
+    sessionStorage.removeItem(STORAGE_KEY);
+  }
+}
+
+loadFromSession();
 
 export function createSdkPendingOp(
   walletId: string,
@@ -32,6 +59,7 @@ export function createSdkPendingOp(
     bodyHash,
     exp: Date.now() + TTL_MS,
   });
+  persist();
   return id;
 }
 
@@ -52,5 +80,6 @@ export function consumeSdkPendingOp(
     return false;
   }
   ops.delete(opId);
+  persist();
   return true;
 }

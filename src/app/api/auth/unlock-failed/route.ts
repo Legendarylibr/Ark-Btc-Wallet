@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { hashClientBinding } from "@/lib/client-binding";
 import { assertApiSecurity } from "@/lib/inbound-security";
 import { consumeUnlockAttemptToken } from "@/lib/crypto/unlock-attempt-token";
 import { clientIp, rateLimit } from "@/lib/crypto/rate-limit";
@@ -24,7 +25,10 @@ export async function POST(req: NextRequest) {
   }
 
   const { unlockToken } = parsed.data;
-  if (!unlockToken || !consumeUnlockAttemptToken(unlockToken)) {
+  if (
+    !unlockToken ||
+    !consumeUnlockAttemptToken(unlockToken, hashClientBinding(req))
+  ) {
     return NextResponse.json(
       { error: "Invalid or expired unlock token" },
       { status: 401 },

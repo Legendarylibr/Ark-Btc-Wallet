@@ -8,7 +8,12 @@ import {
   assertLocalOrigin,
   assertSameSiteFetch,
   assertStrictFetchSite,
+  assertStrictReadFetchSite,
 } from "@/lib/inbound-security";
+import {
+  isReadCryptoPostPath,
+  isReadProtectedPath,
+} from "@/lib/webauthn/pending-op-paths";
 import { isValidSessionId } from "@/lib/security/session-id";
 import { withApiSecurityHeaders } from "@/lib/security/api-headers";
 
@@ -44,7 +49,17 @@ export function middleware(request: NextRequest) {
   const originBlock = assertLocalOrigin(request);
   if (originBlock) return apiReject(originBlock);
 
-  if (!request.nextUrl.pathname.startsWith(WALLET_API_PREFIX)) {
+  if (request.nextUrl.pathname.startsWith(WALLET_API_PREFIX)) {
+    const pathname = request.nextUrl.pathname;
+    if (request.method === "GET" && isReadProtectedPath(pathname)) {
+      const readBlock = assertStrictReadFetchSite(request);
+      if (readBlock) return apiReject(readBlock);
+    }
+    if (request.method === "POST" && isReadCryptoPostPath(pathname)) {
+      const syncBlock = assertStrictFetchSite(request);
+      if (syncBlock) return apiReject(syncBlock);
+    }
+  } else {
     return apiNext();
   }
 

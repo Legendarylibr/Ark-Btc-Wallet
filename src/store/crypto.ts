@@ -19,9 +19,12 @@ import { LOGOUT_HEADER } from "@/lib/crypto/cookie";
 import { validatePassphrase } from "@/lib/passphrase";
 import {
   authenticateWithHardware,
-  fetchHardwareStatus,
   registerHardwareDevice,
 } from "@/lib/webauthn/client";
+import {
+  getBarkHardwareRegistered,
+  setBarkHardwareRegistered,
+} from "@/lib/vault-storage";
 import {
   HARDWARE_AUTH_HEADER,
   PENDING_OP_HEADER,
@@ -31,9 +34,8 @@ import { preSessionSignedJson } from "@/lib/pre-session-fetch";
 import { WALLET_LOCK_TIMEOUT_MS } from "@/lib/security/constants";
 
 const LOCK_TIMEOUT_MS = WALLET_LOCK_TIMEOUT_MS;
-const MAX_UNLOCK_ATTEMPTS = 8;
-const UNLOCK_WINDOW_MS = 15 * 60 * 1000;
-const UNLOCK_ATTEMPTS_KEY = "ark-unlock-attempts-v2";
+
+let unlockFailStreak = 0;
 
 function unlockBackoffMs(attempts: number): number {
   return Math.min(500 * 2 ** Math.min(attempts, 5), 8000);
@@ -72,12 +74,7 @@ export const useCryptoStore = create<CryptoState>((set, get) => ({
     const hasVault = await vaultExists();
     let hardwareRegistered = false;
     if (hasVault) {
-      try {
-        const status = await fetchHardwareStatus();
-        hardwareRegistered = status.registered;
-      } catch {
-        hardwareRegistered = false;
-      }
+      hardwareRegistered = await getBarkHardwareRegistered();
     }
     set({ hasVault, hardwareRegistered, vaultReady: true });
   },
@@ -88,6 +85,7 @@ export const useCryptoStore = create<CryptoState>((set, get) => ({
 
     const { vault, identity } = await createVault(passphrase);
     await saveVaultToStorage(vault);
+    await setBarkHardwareRegistered(false);
     zeroize(identity.privateKey);
     set({
       hasVault: true,
@@ -99,6 +97,7 @@ export const useCryptoStore = create<CryptoState>((set, get) => ({
 
   registerHardware: async (passphrase) => {
     await registerHardwareDevice(passphrase);
+    await setBarkHardwareRegistered(true);
     set({ hardwareRegistered: true });
   },
 
@@ -120,11 +119,6 @@ export const useCryptoStore = create<CryptoState>((set, get) => ({
     }
     const unlockToken = checkBody.unlockToken;
 
-    const attempts = getUnlockAttempts();
-    if (attempts.count >= MAX_UNLOCK_ATTEMPTS) {
-      throw new Error("Too many unlock attempts — wait 15 minutes");
-    }
-
     if (!get().hardwareRegistered) {
       throw new Error("Register a security key or passkey first");
     }
@@ -136,13 +130,13 @@ export const useCryptoStore = create<CryptoState>((set, get) => ({
     try {
       identity = await unlockVault(passphrase, vault);
     } catch (e) {
-      recordUnlockFailure();
+      unlockFailStreak += 1;
       await reportUnlockFailure(unlockToken);
-      const delay = unlockBackoffMs(attempts.count);
+      const delay = unlockBackoffMs(unlockFailStreak);
       await new Promise((r) => setTimeout(r, delay));
       throw e;
     }
-    clearUnlockAttempts();
+    unlockFailStreak = 0;
 
     try {
       const challengeRes = await fetch("/api/auth/challenge", {
@@ -255,29 +249,6 @@ export const useCryptoStore = create<CryptoState>((set, get) => ({
   clearPairingNotice: () => set({ pairingNotice: null }),
 }));
 
-function getUnlockAttempts(): { count: number; since: number } {
-  if (typeof window === "undefined") return { count: 0, since: Date.now() };
-  try {
-    const raw = localStorage.getItem(UNLOCK_ATTEMPTS_KEY);
-    if (!raw) return { count: 0, since: Date.now() };
-    const data = JSON.parse(raw) as { count: number; since: number };
-    if (Date.now() - data.since > UNLOCK_WINDOW_MS) {
-      return { count: 0, since: Date.now() };
-    }
-    return data;
-  } catch {
-    return { count: 0, since: Date.now() };
-  }
-}
-
-function recordUnlockFailure(): void {
-  const prev = getUnlockAttempts();
-  localStorage.setItem(
-    UNLOCK_ATTEMPTS_KEY,
-    JSON.stringify({ count: prev.count + 1, since: prev.since }),
-  );
-}
-
 async function reportUnlockFailure(unlockToken: string): Promise<void> {
   try {
     await fetch("/api/auth/unlock-failed", {
@@ -292,8 +263,4 @@ async function reportUnlockFailure(unlockToken: string): Promise<void> {
   } catch {
     /* best-effort server budget */
   }
-}
-
-function clearUnlockAttempts(): void {
-  localStorage.removeItem(UNLOCK_ATTEMPTS_KEY);
 }

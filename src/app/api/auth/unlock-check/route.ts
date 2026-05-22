@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { hashClientBinding } from "@/lib/client-binding";
 import { assertApiSecurity } from "@/lib/inbound-security";
 import { issueUnlockAttemptToken } from "@/lib/crypto/unlock-attempt-token";
 import { clientIp, rateLimit } from "@/lib/crypto/rate-limit";
@@ -20,6 +21,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const unlockToken = issueUnlockAttemptToken();
+  const unlockToken = issueUnlockAttemptToken(hashClientBinding(req));
   return NextResponse.json({ allowed: true, unlockToken });
 }

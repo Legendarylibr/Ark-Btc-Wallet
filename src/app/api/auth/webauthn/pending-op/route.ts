@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     return runCryptoGuard(req, body.text, postHandler);
   }
 
-  if (!rateLimit(`pending-op-pre:${ip}`, 30, 60_000)) {
+  if (!rateLimit(`pending-op-pre:${ip}`, 12, 60_000)) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
