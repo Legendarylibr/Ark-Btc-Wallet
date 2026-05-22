@@ -54,4 +54,4 @@ lean/ArkWallet/
 - SDK mode (`src/sdk/**`)
 - Full SHA-256 for arbitrary bodies (fixture table only)
 
-Regenerate `FvFixtures.lean` after changing pure functions in `src/lib/crypto/*`, `inbound-security.ts`, or `pending-op-paths.ts`.
+Regenerate `FvFixtures.lean` after changing mapped modules under `src/lib/crypto/*`, `src/lib/security/loopback.ts`, or `src/lib/webauthn/pending-op-paths.ts` (`npm run fv:extract`).

@@ -293,7 +293,7 @@ Document each axiom in `SECURITY.md` cross-ref.
 3. **Route handlers** — Model as `Handler : World → Request → World × Response` (no IO).
 4. **Sorries** — One sorry per axiom; no sorry in P0 theorems once model stable.
 
-Suggested CI (future): `lake build` on `lean/` + `scripts/extract-fv-fixtures.mjs` from vitest.
+CI runs `tsx scripts/fv-extract.ts` then `lake build` (see `lean-fv` job).
 
 ---
 
@@ -357,7 +357,7 @@ Generate fixtures: hash inputs/outputs of pure functions for `lake exe fv-sync`.
 | 6 | Pending | SDK tree `ArkWallet.Sdk` |
 
 1. ~~Add `lean/` with `lakefile.lean` and `Crypto/Canonical.lean`.~~
-2. ~~Add `scripts/fv-extract.mjs`.~~
+2. ~~Add `scripts/fv-extract.ts`.~~
 3. Prove **P0-1** for arbitrary `NonceStore` (concrete traces only today).
 4. Replace partial `hashBody` (fixture table) with full SHA-256 in Lean.
 5. ~~Track axioms in `Refinement/Obligations.lean`.~~
