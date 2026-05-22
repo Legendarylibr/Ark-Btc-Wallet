@@ -5,9 +5,14 @@ import { barkd } from "@/lib/barkd";
 import { verifyHardwareRegistration } from "@/lib/webauthn/verify";
 import { consumeSetupToken } from "@/lib/crypto/setup-token";
 import { SETUP_TOKEN_HEADER } from "@/lib/webauthn/constants";
+import { SETUP_PROOF_INCOMPLETE } from "@/lib/webauthn/setup-gate";
 import { clientIp, rateLimit } from "@/lib/crypto/rate-limit";
 import { parseJsonBody } from "@/lib/safe-json";
 import { readLimitedBody } from "@/lib/security/request-limits";
+
+function setupIncomplete(): NextResponse {
+  return NextResponse.json({ error: SETUP_PROOF_INCOMPLETE }, { status: 401 });
+}
 
 export async function POST(req: NextRequest) {
   const block = assertApiSecurity(req);
@@ -33,9 +38,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
-    const { fingerprint } = await barkd.walletStatus();
-    if (!fingerprint) {
-      return NextResponse.json({ error: "No barkd fingerprint" }, { status: 503 });
+    if (!req.headers.get(SETUP_TOKEN_HEADER)) {
+      return setupIncomplete();
+    }
+
+    let fingerprint: string;
+    try {
+      const { fingerprint: fp } = await barkd.walletStatus();
+      if (!fp) {
+        return setupIncomplete();
+      }
+      fingerprint = fp;
+    } catch {
+      return setupIncomplete();
     }
 
     const setup = consumeSetupToken(
@@ -43,10 +58,7 @@ export async function POST(req: NextRequest) {
       fingerprint,
     );
     if (!setup) {
-      return NextResponse.json(
-        { error: "Setup token expired — prove vault ownership again" },
-        { status: 401 },
-      );
+      return setupIncomplete();
     }
 
     const result = await verifyHardwareRegistration(
