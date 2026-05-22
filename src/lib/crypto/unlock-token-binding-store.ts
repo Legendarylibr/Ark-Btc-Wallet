@@ -51,7 +51,7 @@ function persist(): void {
   writeEncryptedFile(encPath(), { v: 1, entries });
 }
 
-function prune(): void {
+export function pruneUnlockTokenBindings(): void {
   const map = getMap();
   const now = Date.now();
   let changed = false;
@@ -69,13 +69,13 @@ export function putUnlockTokenBinding(
   binding: string,
   exp: number,
 ): void {
-  prune();
+  pruneUnlockTokenBindings();
   getMap().set(token, { binding, exp });
   persist();
 }
 
 export function getUnlockTokenBinding(token: string): string | undefined {
-  prune();
+  pruneUnlockTokenBindings();
   const entry = getMap().get(token);
   if (!entry || Date.now() > entry.exp) return undefined;
   return entry.binding;

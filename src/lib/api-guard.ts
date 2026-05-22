@@ -3,6 +3,7 @@ import { assertApiSecurity } from "@/lib/inbound-security";
 import { verifySignedRequest } from "@/lib/crypto/verify-request";
 import { readLimitedBody } from "@/lib/security/request-limits";
 import { withApiSecurityHeaders } from "@/lib/security/api-headers";
+import { ensureEphemeralPruned } from "@/lib/security/ephemeral-init.server";
 
 export type GuardedHandler = (
   request: NextRequest,
@@ -15,6 +16,7 @@ export async function runCryptoGuard(
   bodyText: string,
   handler: GuardedHandler,
 ): Promise<NextResponse> {
+  ensureEphemeralPruned();
   const block = assertApiSecurity(request);
   if (block) return withApiSecurityHeaders(block);
 

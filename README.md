@@ -95,6 +95,7 @@ More detail: [docs/getting-started.md](docs/getting-started.md) · [docs/platfor
 | [docs/configuration.md](docs/configuration.md) | Environment variables, production checklist |
 | [docs/troubleshooting.md](docs/troubleshooting.md) | Common errors |
 | [SECURITY.md](SECURITY.md) | Trust model and incident response |
+| [docs/zero-trust-retention.md](docs/zero-trust-retention.md) | Zero trust verification chain and data retention |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Dev workflow and project layout |
 
 ## Wallet backends

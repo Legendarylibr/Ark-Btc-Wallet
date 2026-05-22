@@ -13,6 +13,8 @@ const ops = new Map<string, SdkPendingOperation>();
 const TTL_MS = 2 * 60 * 1000;
 const STORAGE_KEY = "sdk-pending-ops";
 
+let sessionHydrated = false;
+
 function prune(): void {
   const now = Date.now();
   for (const [id, op] of ops) {
@@ -21,6 +23,7 @@ function prune(): void {
 }
 
 function persist(): void {
+  if (typeof window === "undefined") return;
   try {
     const entries: Record<string, SdkPendingOperation> = {};
     for (const [id, op] of ops) entries[id] = op;
@@ -31,6 +34,7 @@ function persist(): void {
 }
 
 function loadFromSession(): void {
+  if (typeof window === "undefined") return;
   try {
     const raw = sessionStorage.getItem(STORAGE_KEY);
     if (!raw) return;
@@ -44,13 +48,29 @@ function loadFromSession(): void {
   }
 }
 
-loadFromSession();
+function ensureSessionHydrated(): void {
+  if (sessionHydrated || typeof window === "undefined") return;
+  sessionHydrated = true;
+  loadFromSession();
+}
+
+export function clearSdkPendingOpsStorage(): void {
+  ops.clear();
+  sessionHydrated = false;
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.removeItem(STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
 
 export function createSdkPendingOp(
   walletId: string,
   type: SdkPendingOpType,
   bodyHash: string,
 ): string {
+  ensureSessionHydrated();
   prune();
   const id = crypto.randomUUID();
   ops.set(id, {
@@ -69,6 +89,7 @@ export function consumeSdkPendingOp(
   type: SdkPendingOpType,
   bodyHash: string,
 ): boolean {
+  ensureSessionHydrated();
   prune();
   const op = ops.get(opId);
   if (!op || Date.now() > op.exp) return false;

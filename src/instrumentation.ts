@@ -1,4 +1,5 @@
 import { MIN_SESSION_SECRET_LENGTH } from "@/lib/security/constants";
+import { isZeroRetentionMode } from "@/lib/security/retention-policy";
 
 export async function register() {
   if (process.env.NODE_ENV !== "production") return;
@@ -30,6 +31,12 @@ export async function register() {
       "[ark-wallet] FATAL: ALLOW_REMOTE_HOST=true is unsafe in production.",
     );
     process.exit(1);
+  }
+
+  if (isZeroRetentionMode()) {
+    console.error(
+      "[ark-wallet] ARK_ZERO_RETENTION=true — short session/nonce TTLs; ephemeral purge on first API request and logout.",
+    );
   }
 
   if (process.env.NEXT_PUBLIC_WALLET_BACKEND === "sdk") {

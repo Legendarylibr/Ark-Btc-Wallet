@@ -21,6 +21,9 @@ Copy [.env.example](../.env.example) to `.env.local` for local development.
 | `TRUST_PROXY` | `false` | If `true`, use `X-Forwarded-For` / `X-Real-IP` for rate limits and session binding. |
 | `ALLOW_REMOTE_HOST` | `false` | If `true`, disables loopback Host/Origin checks. **Fatal in production startup.** |
 | `ENABLE_HSTS` | `false` | Adds Strict-Transport-Security and CSP upgrade when behind HTTPS. |
+| `ARK_ZERO_RETENTION` | `false` | Short server TTLs; purge ephemeral `.ark-wallet-data` on startup and logout. |
+| `ZERO_DATA_RETENTION` | `false` | Alias for `ARK_ZERO_RETENTION`. |
+| `NEXT_PUBLIC_ARK_ZERO_RETENTION` | `false` | Clear browser caches / SDK sessionStorage on lock (client build flag). |
 
 ## Production checklist
 

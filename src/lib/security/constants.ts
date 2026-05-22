@@ -1,20 +1,16 @@
-/** Client idle auto-lock (barkd + SDK browser wallet) */
-export const WALLET_LOCK_TIMEOUT_MS = 5 * 60 * 1000;
+export {
+  WALLET_LOCK_TIMEOUT_MS,
+  READ_HARDWARE_TTL_MS,
+  MAX_API_BODY_BYTES,
+  MIN_SESSION_SECRET_LENGTH,
+  MAX_CLOCK_SKEW_MS,
+} from "@/lib/security/constants-base";
 
-/** Balance/history reads allowed after recent WebAuthn (matches auto-lock window) */
-export const READ_HARDWARE_TTL_MS = WALLET_LOCK_TIMEOUT_MS;
+import {
+  retentionSessionIdleMs,
+  retentionSessionTtlMs,
+} from "@/lib/security/retention-policy";
 
-/** Server session absolute lifetime */
-export const SERVER_SESSION_TTL_MS = 8 * 60 * 60 * 1000;
-
-/** Server session idle timeout (no signed API use) */
-export const SERVER_SESSION_IDLE_MS = 30 * 60 * 1000;
-
-/** Max JSON / signed request body */
-export const MAX_API_BODY_BYTES = 64 * 1024;
-
-/** Production SESSION_SECRET minimum */
-export const MIN_SESSION_SECRET_LENGTH = 32;
-
-/** Ed25519 request clock skew */
-export const MAX_CLOCK_SKEW_MS = 5 * 60 * 1000;
+/** Evaluated at process start from env (see ARK_ZERO_RETENTION). */
+export const SERVER_SESSION_IDLE_MS = retentionSessionIdleMs();
+export const SERVER_SESSION_TTL_MS = retentionSessionTtlMs();

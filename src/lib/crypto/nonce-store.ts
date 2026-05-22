@@ -1,5 +1,6 @@
 import path from "path";
 import { getWalletDataDir } from "@/lib/data-dir";
+import { retentionNonceTtlMs } from "@/lib/security/retention-policy";
 import {
   readEncryptedFile,
   writeEncryptedFile,
@@ -12,7 +13,9 @@ type NonceGlobal = typeof globalThis & {
 
 const g = globalThis as NonceGlobal;
 
-const NONCE_TTL_MS = 10 * 60 * 1000;
+function nonceTtlMs(): number {
+  return retentionNonceTtlMs();
+}
 
 interface NonceFile {
   v: 1;
@@ -54,7 +57,7 @@ function getMap(): Map<string, number> {
   return g.__arkScopedNonces;
 }
 
-function prune(): void {
+export function pruneNonceStore(): void {
   const map = getMap();
   const now = Date.now();
   let changed = false;
@@ -76,11 +79,11 @@ function scopedKey(scope: string, nonce: string): string {
  * Persists to disk so replay cannot succeed across server restarts.
  */
 export function claimNonce(scope: string, nonce: string): boolean {
-  prune();
+  pruneNonceStore();
   const map = getMap();
   const key = scopedKey(scope, nonce);
   if (map.has(key)) return false;
-  map.set(key, Date.now() + NONCE_TTL_MS);
+  map.set(key, Date.now() + nonceTtlMs());
   persistMap(map);
   return true;
 }

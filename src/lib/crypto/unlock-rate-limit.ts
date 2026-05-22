@@ -1,6 +1,10 @@
 import path from "path";
 import { getWalletDataDir } from "@/lib/data-dir";
 import {
+  retentionMaxUnlockFailures,
+  retentionUnlockWindowMs,
+} from "@/lib/security/retention-policy";
+import {
   readEncryptedFile,
   writeEncryptedFile,
 } from "@/lib/encrypted-file";
@@ -12,8 +16,13 @@ type UnlockGlobal = typeof globalThis & {
 
 const g = globalThis as UnlockGlobal;
 
-const MAX_ATTEMPTS = 8;
-const WINDOW_MS = 15 * 60 * 1000;
+function maxAttempts(): number {
+  return retentionMaxUnlockFailures();
+}
+
+function windowMs(): number {
+  return retentionUnlockWindowMs();
+}
 
 interface UnlockLimitFile {
   v: 1;
@@ -55,7 +64,7 @@ function getMap(): Map<string, { count: number; resetAt: number }> {
   return g.__arkUnlockLimits;
 }
 
-function prune(): void {
+export function pruneUnlockLimits(): void {
   const map = getMap();
   const now = Date.now();
   let changed = false;
@@ -70,20 +79,20 @@ function prune(): void {
 
 /** Server-side unlock attempt budget per IP (survives process restart). */
 export function unlockAttemptAllowed(ip: string): boolean {
-  prune();
+  pruneUnlockLimits();
   const now = Date.now();
   const entry = getMap().get(ip);
   if (!entry || now > entry.resetAt) return true;
-  return entry.count < MAX_ATTEMPTS;
+  return entry.count < maxAttempts();
 }
 
 export function recordUnlockFailure(ip: string): void {
-  prune();
+  pruneUnlockLimits();
   const now = Date.now();
   const map = getMap();
   const entry = map.get(ip);
   if (!entry || now > entry.resetAt) {
-    map.set(ip, { count: 1, resetAt: now + WINDOW_MS });
+    map.set(ip, { count: 1, resetAt: now + windowMs() });
   } else {
     entry.count += 1;
   }
