@@ -292,10 +292,9 @@ export function SendSheet({
                   </p>
                 </div>
                 {!estimate.affordable && (
-                  <p className="text-red-400 text-sm">
-                    Insufficient balance ({estimate.spendable_sat.toLocaleString()}{" "}
-                    spendable)
-                  </p>
+                  <ErrorBanner
+                    message={`Insufficient balance (${estimate.spendable_sat.toLocaleString()} spendable)`}
+                  />
                 )}
               </>
             )}

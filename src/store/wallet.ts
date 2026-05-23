@@ -98,7 +98,6 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       set({ balance, error: null });
     } catch (e) {
       handleApiError(e, set);
-      throw e;
     }
   },
 
@@ -126,7 +125,6 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       set({ receiveAddress: address, error: null });
     } catch (e) {
       handleApiError(e, set);
-      throw e;
     }
   },
 

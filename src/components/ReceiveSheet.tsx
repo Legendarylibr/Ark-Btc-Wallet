@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Sheet } from "@/components/ui/Sheet";
 import { Button } from "@/components/ui/Button";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { copyToClipboard, truncateAddress } from "@/lib/utils";
 import { Copy, Check, RefreshCw } from "lucide-react";
 
@@ -100,7 +101,7 @@ export function ReceiveSheet({
             </Button>
           </>
         ) : (
-          <p className="text-red-400 text-sm">Could not load address</p>
+          <ErrorBanner message="Could not load address" />
         )}
 
         <p className="text-xs text-cash-muted text-center max-w-sm leading-relaxed">
