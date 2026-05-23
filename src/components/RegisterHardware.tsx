@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { useCryptoStore } from "@/store/crypto";
 import { Fingerprint, Usb } from "lucide-react";
 
@@ -72,7 +73,7 @@ export function RegisterHardware({ onComplete }: RegisterHardwareProps) {
           127.0.0.1
         </li>
       </ul>
-      {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
+      <ErrorBanner message={error} className="mb-4" />
       <Button className="w-full" disabled={loading} onClick={handleRegister}>
         {loading ? "Waiting for device…" : "Register security key / passkey"}
       </Button>

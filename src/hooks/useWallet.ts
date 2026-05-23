@@ -29,11 +29,11 @@ export function useWallet() {
   useEffect(() => {
     if (!onboarded || !cryptoReady) return;
     const s = useWalletStore.getState();
-    s.fetchBalance().catch(() => {});
-    s.fetchHistory().catch(() => {});
+    void s.fetchBalance();
+    void s.fetchHistory();
 
     const id = setInterval(() => {
-      useWalletStore.getState().refreshAll().catch(() => {});
+      void useWalletStore.getState().refreshAll();
     }, SYNC_INTERVAL_MS);
 
     return () => clearInterval(id);

@@ -100,3 +100,7 @@ No Next.js wallet API in SDK mode; WebAuthn and pending-op checks are **client-o
 ## Auto-lock
 
 Both modes lock after **5 minutes** idle (`WALLET_LOCK_TIMEOUT_MS`). SDK mode also locks when the tab is hidden.
+
+## Deployment assumptions
+
+Run **one** Next.js process per machine for barkd mode. Encrypted server state (sessions, nonces, rate limits) is stored in `.ark-wallet-data/` without cross-process locking; multiple workers or replicas can race on the same data directory.

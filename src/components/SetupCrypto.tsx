@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { useCryptoStore } from "@/store/crypto";
 import { validatePassphrase } from "@/lib/passphrase";
 import { Lock } from "lucide-react";
@@ -90,7 +91,7 @@ export function SetupCrypto({ onComplete }: SetupCryptoProps) {
             can spend while barkd runs. This app only authorizes the web UI.
           </span>
         </label>
-        {error && <p className="text-red-400 text-sm">{error}</p>}
+        <ErrorBanner message={error} />
         <Button
           type="submit"
           className="w-full"

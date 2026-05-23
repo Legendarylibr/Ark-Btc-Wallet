@@ -10,6 +10,7 @@ import { isValidNonceUuid } from "./nonce-format";
 import { claimNonce } from "./nonce-store";
 import { isTimestampValid } from "./session-store";
 import { rateLimit } from "./rate-limit";
+import { constantTimeBodyHashEqual } from "./secure-compare";
 
 const MIN_SIG_B64_LENGTH = 80;
 const ED25519_PUB_LEN = 32;
@@ -55,7 +56,7 @@ export async function verifyPreSessionRequest(
   }
 
   const computedBodyHash = hashBody(bodyText);
-  if (computedBodyHash !== bodyHashHeader) {
+  if (!constantTimeBodyHashEqual(computedBodyHash, bodyHashHeader)) {
     return NextResponse.json({ error: "Body hash mismatch" }, { status: 401 });
   }
 

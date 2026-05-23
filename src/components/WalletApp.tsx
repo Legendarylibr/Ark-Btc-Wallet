@@ -13,6 +13,7 @@ import { SetupCrypto } from "@/components/SetupCrypto";
 import { UnlockGate } from "@/components/UnlockGate";
 import { RegisterHardware } from "@/components/RegisterHardware";
 import { SecurityBanner } from "@/components/SecurityBanner";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import {
   Shield,
   Check,
@@ -58,13 +59,13 @@ export function WalletApp() {
   const handleRefresh = useCallback(async () => {
     await fetchHealth();
     if (useCryptoStore.getState().identity) {
-      await refreshAll().catch(() => {});
+      await refreshAll();
     }
   }, [fetchHealth, refreshAll]);
 
   useEffect(() => {
     if (cryptoReady && onboarded) {
-      refreshAll().catch(() => {});
+      void refreshAll();
     }
   }, [cryptoReady, onboarded, refreshAll]);
 
@@ -164,14 +165,7 @@ export function WalletApp() {
         </div>
       )}
 
-      {error && (
-        <div
-          role="alert"
-          className="mx-5 mt-2 px-3 py-2 rounded-xl bg-red-500/10 text-red-400 text-xs text-center"
-        >
-          {error}
-        </div>
-      )}
+      <ErrorBanner message={error} variant="banner" />
 
       <BalanceHero balance={balance} connected={connected} />
       <ActionButtons

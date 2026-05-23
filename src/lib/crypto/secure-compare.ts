@@ -13,3 +13,11 @@ export function constantTimeEqualString(a: string, b: string): boolean {
   for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
   return diff === 0;
 }
+
+/** Constant-time compare of base64 SHA-256 body hashes from signing headers. */
+export function constantTimeBodyHashEqual(
+  computed: string,
+  header: string,
+): boolean {
+  return constantTimeEqualString(computed, header);
+}

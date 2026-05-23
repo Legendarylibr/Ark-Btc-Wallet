@@ -52,6 +52,25 @@ describe("verifyPreSessionRequest", () => {
     expect(result).not.toBeInstanceOf(Response);
   });
 
+  it("rejects body hash mismatch", async () => {
+    const req = await signedPreSessionRequest(
+      "/api/auth/challenge",
+      "{}",
+      crypto.randomUUID(),
+    );
+    req.headers.set(
+      "x-wallet-body-hash",
+      "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+    );
+    const res = await verifyPreSessionRequest(req, "{}");
+    expect(res).toBeInstanceOf(Response);
+    if (res instanceof Response) {
+      expect(res.status).toBe(401);
+      const body = await res.json();
+      expect(body.error).toMatch(/Body hash/i);
+    }
+  });
+
   it("rejects non-UUID nonce", async () => {
     const req = await signedPreSessionRequest(
       "/api/auth/challenge",

@@ -10,7 +10,10 @@ import { hashClientBinding } from "@/lib/client-binding";
 import { rateLimit } from "@/lib/crypto/rate-limit";
 import { isValidNonceUuid } from "./nonce-format";
 import { claimNonce } from "./nonce-store";
-import { constantTimeEqual } from "./secure-compare";
+import {
+  constantTimeBodyHashEqual,
+  constantTimeEqual,
+} from "./secure-compare";
 import {
   ensureSessionClientBinding,
   destroySession,
@@ -96,7 +99,7 @@ export async function verifySignedRequest(
   }
 
   const computedBodyHash = hashBody(bodyText);
-  if (computedBodyHash !== bodyHashHeader) {
+  if (!constantTimeBodyHashEqual(computedBodyHash, bodyHashHeader)) {
     return NextResponse.json({ error: "Body hash mismatch" }, { status: 401 });
   }
 
