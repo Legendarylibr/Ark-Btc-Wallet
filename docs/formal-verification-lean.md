@@ -239,6 +239,9 @@ stateDiagram-v2
 | P0-8 | Pubkey pin: at most one pubkey per fingerprint |
 | P0-9 | Session destroyed on binding mismatch (no update) |
 | P0-10 | Middleware rejects wallet routes without valid session headers |
+| P0-11 | Only pending-op creator may fetch auth-options (`CreatorAccess`) |
+| P0-12 | WebAuthn counter monotonic + disk sync (`CredentialStore`) |
+| P0-13 | Encrypted state RMW under file lock (`EncryptedFile`) |
 
 ### P1 — Inbound policy
 
@@ -257,6 +260,7 @@ stateDiagram-v2
 | P2-2 | `auth-options` without valid pending op ⇒ single error constructor |
 | P2-3 | `health` response independent of wallet file (axiom on `BarkdModel`) |
 | P2-4 | `barkd-ready` before any pin: no `walletExists` in model transition |
+| SDK-1 | SDK passkey op challenge binds `walletId`, `opId`, `bodyHash` |
 
 ### P3 — Liveness (optional, weaker)
 
@@ -352,17 +356,29 @@ Generate fixtures: hash inputs/outputs of pure functions for `lake exe fv-sync`.
 | 1 | Done | `Auth/Session`, `SessionBinding`, `VerifyRequest`, `PreSession`, `Tests/Verify` |
 | 2 | Done | `WebAuthn/PendingOp`, `PendingOpPaths`, `HardwareFresh`, `SetupGate` |
 | 3 | Done | `Inbound/Loopback`, `Inbound/ApiGate`, `Tests/Inbound` |
-| 4 | Partial | `World`, `Routes/RouteId`, `MiddlewareWallet`, `Health`, `Refinement/TSIndex` |
-| 5 | Pending | Per-route `World` transitions for all 22 API handlers |
-| 6 | Pending | SDK tree `ArkWallet.Sdk` |
+| 4 | Done | `World`, `Routes/RouteId`, `MiddlewareWallet`, `Health`, `Refinement/TSIndex` |
+| 5 | Done | `GuardMatrix`, `AuthFlows`, `WalletOps`, `SetupFlows`, `CreatorAccess`, `CredentialStore`, `FileLock`, `EncryptedFile`, full `TSIndex`, `Tests/Complete` |
+| 6 | Partial | `ArkWallet.Sdk.PasskeyChallenge` (payload model; assertion verify axiomatic) |
 
 1. ~~Add `lean/` with `lakefile.lean` and `Crypto/Canonical.lean`.~~
 2. ~~Add `scripts/fv-extract.ts`.~~
 3. Prove **P0-1** for arbitrary `NonceStore` (concrete traces only today).
 4. Replace partial `hashBody` (fixture table) with full SHA-256 in Lean.
 5. ~~Track axioms in `Refinement/Obligations.lean`.~~
-6. Model each `route.ts` as `World → Request → World × Response`.
-7. Keep SDK and barkd bypass separate.
+6. ~~Model each `route.ts` as `World → Request → World × Response`.~~ Guard matrix + flow steps in `Routes/*`; per-handler transitions remain future work.
+7. Keep SDK and barkd bypass separate — `ArkWallet.Sdk` + `obligation_barkd_bypass`.
+
+### Complete map (implemented)
+
+All security-critical TypeScript modules and API routes are indexed in **`lean/ArkWallet/Refinement/TSIndex.lean`**:
+
+- **22 API routes** → `Routes/RouteId`, `Routes/GuardMatrix.guardsFor`
+- **~45 lib modules** → `Crypto/*`, `Auth/*`, `WebAuthn/*`, `Inbound/*`
+- **New hardening (post-audit)** → `FileLock`, `EncryptedFile`, `CredentialStore`, `CreatorAccess`, setup-token cooldown
+- **SDK boundary** → `Sdk/PasskeyChallenge` (separate from barkd refinement)
+
+Property catalog (P0–P2 + SDK-1): `Refinement/Obligations.propertyCatalog`.
+Regression tests for new models: `Tests/Complete.lean`.
 
 ---
 

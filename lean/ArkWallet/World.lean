@@ -1,9 +1,11 @@
-import ArkWallet.Auth.Session
 import ArkWallet.Auth.PubkeyPin
+import ArkWallet.Auth.Session
 import ArkWallet.Auth.SetupToken
 import ArkWallet.Auth.UnlockToken
 import ArkWallet.Crypto.Challenge
+import ArkWallet.Crypto.EncryptedFile
 import ArkWallet.Crypto.NonceStore
+import ArkWallet.WebAuthn.CredentialStore
 import ArkWallet.WebAuthn.PendingOp
 
 namespace ArkWallet
@@ -21,6 +23,8 @@ structure World where
   pins : PinStore
   setupTokens : SetupTokenStore
   unlockTokens : UnlockTokenStore
+  webauthnCreds : CredentialStore
+  encryptedFiles : EncryptedFileState
   deriving Inhabited
 
 def World.empty : World :=
@@ -30,6 +34,8 @@ def World.empty : World :=
     pendingOps := default
     pins := default
     setupTokens := default
-    unlockTokens := default }
+    unlockTokens := default
+    webauthnCreds := default
+    encryptedFiles := default }
 
 end ArkWallet
