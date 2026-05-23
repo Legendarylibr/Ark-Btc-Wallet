@@ -6,6 +6,7 @@ import { barkd } from "@/lib/barkd";
 import { getWebAuthnCredential } from "@/lib/webauthn/store";
 import { getWebAuthnConfig } from "@/lib/webauthn/config";
 import { storeWebAuthnChallenge } from "@/lib/webauthn/challenges";
+import { atomicClaimPendingOpAuthOptions } from "@/lib/webauthn/pending-op-store";
 import { getPendingOpDetails } from "@/lib/webauthn/pending-op";
 import { verifyPendingOpCreatorAccess } from "@/lib/webauthn/verify-pending-op-access";
 import { HARDWARE_AUTH_UNAVAILABLE } from "@/lib/webauthn/setup-gate";
@@ -60,6 +61,10 @@ export async function GET(req: NextRequest) {
 
     const stored = getWebAuthnCredential(fingerprint);
     if (!stored) {
+      return hardwareAuthUnavailable();
+    }
+
+    if (!atomicClaimPendingOpAuthOptions(opId, fingerprint)) {
       return hardwareAuthUnavailable();
     }
 

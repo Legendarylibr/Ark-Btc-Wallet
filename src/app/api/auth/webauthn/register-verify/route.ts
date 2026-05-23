@@ -3,7 +3,7 @@ import type { RegistrationResponseJSON } from "@simplewebauthn/server";
 import { assertApiSecurity } from "@/lib/inbound-security";
 import { barkd } from "@/lib/barkd";
 import { verifyHardwareRegistration } from "@/lib/webauthn/verify";
-import { consumeSetupToken } from "@/lib/crypto/setup-token";
+import { validateSetupToken, consumeSetupToken } from "@/lib/crypto/setup-token";
 import { SETUP_TOKEN_HEADER } from "@/lib/webauthn/constants";
 import { SETUP_PROOF_INCOMPLETE } from "@/lib/webauthn/setup-gate";
 import { clientIp, rateLimit } from "@/lib/crypto/rate-limit";
@@ -53,10 +53,8 @@ export async function POST(req: NextRequest) {
       return setupIncomplete();
     }
 
-    const setup = consumeSetupToken(
-      req.headers.get(SETUP_TOKEN_HEADER),
-      fingerprint,
-    );
+    const setupToken = req.headers.get(SETUP_TOKEN_HEADER);
+    const setup = validateSetupToken(setupToken, fingerprint);
     if (!setup) {
       return setupIncomplete();
     }
@@ -70,6 +68,10 @@ export async function POST(req: NextRequest) {
 
     if (!result.ok) {
       return NextResponse.json({ error: result.error }, { status: 401 });
+    }
+
+    if (!consumeSetupToken(setupToken, fingerprint)) {
+      return setupIncomplete();
     }
 
     return NextResponse.json({ ok: true });

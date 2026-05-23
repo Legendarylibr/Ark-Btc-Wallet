@@ -30,7 +30,7 @@ describe("client-binding", () => {
       }),
     );
     expect(a).not.toBe(b);
-    expect(a.length).toBe(16);
+    expect(a.length).toBe(64);
   });
 });
 

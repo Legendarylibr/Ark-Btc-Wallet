@@ -8,6 +8,7 @@ import {
 } from "@/lib/crypto/session-store";
 import { SESSION_COOKIE } from "@/lib/crypto/cookie";
 import { verifyHardwareAuthentication } from "./verify";
+import { HARDWARE_AUTH_HEADER, PENDING_OP_HEADER } from "./constants";
 import {
   consumePendingOp,
   invalidatePendingOp,
@@ -15,7 +16,6 @@ import {
   pendingOpTypeForPath,
   type PendingOpType,
 } from "./pending-op";
-import { HARDWARE_AUTH_HEADER, PENDING_OP_HEADER } from "./constants";
 
 export {
   HARDWARE_AUTH_HEADER,

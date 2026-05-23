@@ -1,4 +1,5 @@
 import {
+  atomicConsumePendingOp,
   deletePendingOp,
   getPendingOp,
   prunePendingOps,
@@ -73,9 +74,7 @@ export function consumePendingOp(
   type: PendingOpType,
   bodyHash: string,
 ): boolean {
-  if (!matchesPendingOp(opId, fingerprint, type, bodyHash)) return false;
-  deletePendingOp(opId);
-  return true;
+  return atomicConsumePendingOp(opId, fingerprint, type, bodyHash);
 }
 
 export function invalidatePendingOp(opId: string): void {

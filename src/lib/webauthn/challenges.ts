@@ -1,6 +1,7 @@
 import {
   claimExpiringKey,
   consumeExpiringKey,
+  hasExpiringKey,
 } from "@/lib/persisted-scoped-store";
 
 const STORE = "webauthn-challenges";
@@ -12,6 +13,10 @@ function challengeKey(scope: string, challenge: string): string {
 
 export function storeWebAuthnChallenge(scope: string, challenge: string): void {
   claimExpiringKey(STORE, challengeKey(scope, challenge), TTL_MS);
+}
+
+export function hasWebAuthnChallenge(scope: string, challenge: string): boolean {
+  return hasExpiringKey(STORE, challengeKey(scope, challenge));
 }
 
 export function consumeWebAuthnChallenge(
