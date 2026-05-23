@@ -279,8 +279,10 @@ export function SdkWalletApp() {
         !dismissUpgrade && (
           <SdkUpgradeBanner
             loading={store.loading}
-            storeError={store.error}
-            onUpgrade={(p) => store.upgradeToPasskey(p)}
+            onUpgrade={async (p) => {
+              store.clearError();
+              await store.upgradeToPasskey(p);
+            }}
             onDismiss={() => setDismissUpgrade(true)}
           />
         )}
