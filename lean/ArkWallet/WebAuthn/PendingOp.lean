@@ -8,6 +8,7 @@ structure PendingOperation where
   fingerprint : String
   type : PendingOpType
   bodyHash : String
+  creatorPublicKeyB64 : String
   exp : Nat
 
 structure PendingOpStore where
@@ -18,6 +19,17 @@ def PendingOpStore.get (store : PendingOpStore) (opId : String) (now : Nat) : Op
   match store.ops.find? fun (id, _) => id == opId with
   | none => none
   | some (_, op) => if now > op.exp then none else some op
+
+def createPendingOp (store : PendingOpStore) (opId fingerprint : String)
+    (ty : PendingOpType) (bodyHash creatorPublicKeyB64 : String) (now ttl : Nat) :
+    PendingOpStore :=
+  { ops := (opId, {
+      fingerprint := fingerprint
+      type := ty
+      bodyHash := bodyHash
+      creatorPublicKeyB64 := creatorPublicKeyB64
+      exp := now + ttl
+    }) :: store.ops }
 
 def matchesPendingOp (store : PendingOpStore) (opId fingerprint : String)
     (ty : PendingOpType) (bodyHash : String) (now : Nat) : Bool :=

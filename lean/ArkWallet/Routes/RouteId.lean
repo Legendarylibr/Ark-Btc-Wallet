@@ -24,7 +24,7 @@ inductive RouteId
   | walletRefresh
   | walletSync
   | walletReadyDeprecated
-  deriving Decidable, Repr
+  deriving Repr
 
 def routePath : RouteId → String
   | .health => "/api/health"
