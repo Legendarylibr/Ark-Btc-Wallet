@@ -3,13 +3,6 @@ import { getWalletDataDir } from "@/lib/data-dir";
 import { retentionNonceTtlMs } from "@/lib/security/retention-policy";
 import { mutateEncryptedFile } from "@/lib/encrypted-file";
 
-type NonceGlobal = typeof globalThis & {
-  __arkScopedNonces?: Map<string, number>;
-  __arkNonceStoreLoaded?: boolean;
-};
-
-const g = globalThis as NonceGlobal;
-
 function nonceTtlMs(): number {
   return retentionNonceTtlMs();
 }
@@ -29,30 +22,6 @@ function legacyPath(): string {
   return path.join(getWalletDataDir(), "nonces.json");
 }
 
-function syncCacheFromFile(file: NonceFile): void {
-  if (!g.__arkScopedNonces) g.__arkScopedNonces = new Map();
-  g.__arkScopedNonces.clear();
-  const now = Date.now();
-  for (const [key, exp] of Object.entries(file.entries)) {
-    if (now <= exp) g.__arkScopedNonces.set(key, exp);
-  }
-  g.__arkNonceStoreLoaded = true;
-}
-
-function getMap(): Map<string, number> {
-  if (!g.__arkScopedNonces) g.__arkScopedNonces = new Map();
-  if (!g.__arkNonceStoreLoaded) {
-    const file = mutateEncryptedFile(
-      encPath(),
-      legacyPath(),
-      EMPTY_FILE,
-      (f) => f,
-    );
-    syncCacheFromFile(file);
-  }
-  return g.__arkScopedNonces;
-}
-
 function pruneEntries(entries: NonceFile["entries"]): NonceFile["entries"] {
   const now = Date.now();
   const pruned: NonceFile["entries"] = {};
@@ -63,14 +32,13 @@ function pruneEntries(entries: NonceFile["entries"]): NonceFile["entries"] {
 }
 
 export function pruneNonceStore(): void {
-  const file = mutateEncryptedFile(encPath(), legacyPath(), EMPTY_FILE, (f) => {
+  mutateEncryptedFile(encPath(), legacyPath(), EMPTY_FILE, (f) => {
     const entries = pruneEntries(f.entries);
     if (Object.keys(entries).length === Object.keys(f.entries).length) {
       return f;
     }
     return { v: 1 as const, entries };
   });
-  syncCacheFromFile(file);
 }
 
 function scopedKey(scope: string, nonce: string): string {
@@ -85,7 +53,7 @@ export function claimNonce(scope: string, nonce: string): boolean {
   const key = scopedKey(scope, nonce);
   let claimed = false;
 
-  const file = mutateEncryptedFile(encPath(), legacyPath(), EMPTY_FILE, (f) => {
+  mutateEncryptedFile(encPath(), legacyPath(), EMPTY_FILE, (f) => {
     const entries = pruneEntries(f.entries);
     if (entries[key] != null) {
       return { v: 1 as const, entries };
@@ -95,7 +63,6 @@ export function claimNonce(scope: string, nonce: string): boolean {
     return { v: 1 as const, entries };
   });
 
-  syncCacheFromFile(file);
   return claimed;
 }
 
@@ -106,11 +73,9 @@ export function markNonceUsed(scope: string, nonce: string): boolean {
 
 export const REGISTER_NONCE_SCOPE = "register";
 
-/** Test-only: clear in-memory cache (disk file unchanged). */
+/** Test-only: no-op (store is disk-authoritative; kept for test API stability). */
 export function resetNonceMemoryCacheForTests(): void {
   if (process.env.NODE_ENV === "production") {
     throw new Error("resetNonceMemoryCacheForTests is not allowed in production");
   }
-  g.__arkScopedNonces = undefined;
-  g.__arkNonceStoreLoaded = false;
 }

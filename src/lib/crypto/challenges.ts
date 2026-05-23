@@ -1,7 +1,7 @@
 import { bytesToBase64 } from "./ed25519";
 import {
   claimExpiringKey,
-  deleteExpiringKey,
+  consumeExpiringKey,
   hasExpiringKey,
 } from "@/lib/persisted-scoped-store";
 
@@ -26,7 +26,5 @@ export function hasChallenge(challenge: string): boolean {
 }
 
 export function consumeChallenge(challenge: string): boolean {
-  if (!hasExpiringKey(STORE, challenge)) return false;
-  deleteExpiringKey(STORE, challenge);
-  return true;
+  return consumeExpiringKey(STORE, challenge);
 }

@@ -76,3 +76,23 @@ export function deleteUnlockTokenBinding(token: string): void {
     return { v: 1 as const, entries };
   });
 }
+
+/** Atomically verify binding and delete (single-use unlock token). */
+export function consumeUnlockTokenBinding(
+  token: string,
+  binding: string,
+): boolean {
+  let consumed = false;
+  const now = Date.now();
+  mutateEncryptedFile(encPath(), legacyPath(), EMPTY, (f) => {
+    const entries = pruneEntries(f.entries, now);
+    const entry = entries[token];
+    if (!entry || entry.binding !== binding) {
+      return { v: 1 as const, entries };
+    }
+    delete entries[token];
+    consumed = true;
+    return { v: 1 as const, entries };
+  });
+  return consumed;
+}
