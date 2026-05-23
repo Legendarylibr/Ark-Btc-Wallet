@@ -1,9 +1,6 @@
 import path from "path";
 import { getWalletDataDir } from "@/lib/data-dir";
-import {
-  readEncryptedFile,
-  writeEncryptedFile,
-} from "@/lib/encrypted-file";
+import { mutateEncryptedFile } from "@/lib/encrypted-file";
 import {
   MAX_CLOCK_SKEW_MS,
   READ_HARDWARE_TTL_MS,
@@ -43,12 +40,6 @@ const SESSION_TTL_MS = SERVER_SESSION_TTL_MS;
 
 const EMPTY_FILE: SessionFile = { v: 1, sessions: {} };
 
-type SessionGlobal = typeof globalThis & {
-  __arkSessions?: Map<string, WalletSession>;
-};
-
-const g = globalThis as SessionGlobal;
-
 function encPath(): string {
   return path.join(getWalletDataDir(), "sessions.enc.json");
 }
@@ -57,63 +48,49 @@ function legacyPath(): string {
   return path.join(getWalletDataDir(), "sessions.json");
 }
 
-function loadFile(): SessionFile {
-  return readEncryptedFile(encPath(), legacyPath(), EMPTY_FILE);
+function storedToSession(s: StoredSession): WalletSession {
+  return {
+    id: s.id,
+    publicKey: base64ToBytes(s.publicKey),
+    barkFingerprint: s.barkFingerprint,
+    clientIpHash: s.clientIpHash ?? null,
+    createdAt: s.createdAt,
+    lastSeenAt: s.lastSeenAt,
+    lastHardwareAt: s.lastHardwareAt ?? null,
+  };
 }
 
-function saveFile(data: SessionFile): void {
-  writeEncryptedFile(encPath(), data);
+function isSessionLive(s: StoredSession, now: number): boolean {
+  if (now - s.createdAt > SESSION_TTL_MS) return false;
+  if (now - s.lastSeenAt > SERVER_SESSION_IDLE_MS) return false;
+  return true;
 }
 
-function getMap(): Map<string, WalletSession> {
-  if (!g.__arkSessions) {
-    g.__arkSessions = new Map();
-    const file = loadFile();
-    const now = Date.now();
-    for (const s of Object.values(file.sessions)) {
-      if (now - s.lastSeenAt > SESSION_TTL_MS) continue;
-      g.__arkSessions.set(s.id, {
-        id: s.id,
-        publicKey: base64ToBytes(s.publicKey),
-        barkFingerprint: s.barkFingerprint,
-        clientIpHash: s.clientIpHash ?? null,
-        createdAt: s.createdAt,
-        lastSeenAt: s.lastSeenAt,
-        lastHardwareAt: s.lastHardwareAt ?? null,
-      });
+function pruneSessions(
+  sessions: Record<string, StoredSession>,
+  now: number,
+): Record<string, StoredSession> {
+  const pruned: Record<string, StoredSession> = {};
+  for (const [id, s] of Object.entries(sessions)) {
+    if (isSessionLive(s, now)) pruned[id] = s;
+  }
+  return pruned;
+}
+
+/** Disk-authoritative read; prunes expired sessions under file lock. */
+function refreshSessionFile(): SessionFile {
+  const now = Date.now();
+  return mutateEncryptedFile(encPath(), legacyPath(), EMPTY_FILE, (f) => {
+    const sessions = pruneSessions(f.sessions, now);
+    if (Object.keys(sessions).length === Object.keys(f.sessions).length) {
+      return f;
     }
-  }
-  return g.__arkSessions;
-}
-
-function persist(): void {
-  const map = getMap();
-  const sessions: Record<string, StoredSession> = {};
-  for (const s of map.values()) {
-    sessions[s.id] = {
-      id: s.id,
-      publicKey: bytesToBase64(s.publicKey),
-      barkFingerprint: s.barkFingerprint,
-      clientIpHash: s.clientIpHash,
-      createdAt: s.createdAt,
-      lastSeenAt: s.lastSeenAt,
-      lastHardwareAt: s.lastHardwareAt,
-    };
-  }
-  saveFile({ v: 1, sessions });
+    return { v: 1 as const, sessions };
+  });
 }
 
 export function pruneExpiredSessions(): void {
-  const map = getMap();
-  const now = Date.now();
-  let changed = false;
-  for (const [id, s] of map) {
-    if (now - s.lastSeenAt > SESSION_TTL_MS) {
-      map.delete(id);
-      changed = true;
-    }
-  }
-  if (changed) persist();
+  refreshSessionFile();
 }
 
 export function createSession(
@@ -121,51 +98,59 @@ export function createSession(
   barkFingerprint: string | null,
   clientIpHash: string | null = null,
 ): WalletSession {
-  pruneExpiredSessions();
   const id = crypto.randomUUID();
   const now = Date.now();
-  const session: WalletSession = {
+  const stored: StoredSession = {
     id,
-    publicKey: base64ToBytes(publicKeyB64),
+    publicKey: publicKeyB64,
     barkFingerprint,
     clientIpHash,
     createdAt: now,
     lastSeenAt: now,
     lastHardwareAt: now,
   };
-  getMap().set(id, session);
-  persist();
-  return session;
+  mutateEncryptedFile(encPath(), legacyPath(), EMPTY_FILE, (f) => {
+    const sessions = pruneSessions(f.sessions, now);
+    sessions[id] = stored;
+    return { v: 1 as const, sessions };
+  });
+  return storedToSession(stored);
 }
 
 export function getSession(id: string): WalletSession | null {
-  pruneExpiredSessions();
-  const s = getMap().get(id);
+  const file = refreshSessionFile();
+  const s = file.sessions[id];
   if (!s) return null;
   const now = Date.now();
-  if (now - s.createdAt > SESSION_TTL_MS) {
-    getMap().delete(id);
-    persist();
+  if (!isSessionLive(s, now)) {
+    mutateEncryptedFile(encPath(), legacyPath(), EMPTY_FILE, (f) => {
+      const sessions = pruneSessions(f.sessions, now);
+      delete sessions[id];
+      return { v: 1 as const, sessions };
+    });
     return null;
   }
-  if (now - s.lastSeenAt > SERVER_SESSION_IDLE_MS) {
-    getMap().delete(id);
-    persist();
-    return null;
-  }
-  return s;
+  return storedToSession(s);
 }
 
 export function touchSession(id: string): void {
-  const s = getMap().get(id);
-  if (s) {
-    s.lastSeenAt = Date.now();
-    persist();
-  }
+  const now = Date.now();
+  mutateEncryptedFile(encPath(), legacyPath(), EMPTY_FILE, (f) => {
+    const sessions = pruneSessions(f.sessions, now);
+    const s = sessions[id];
+    if (!s) return f;
+    sessions[id] = { ...s, lastSeenAt: now };
+    return { v: 1 as const, sessions };
+  });
 }
 
 export function destroySession(id: string): void {
-  if (getMap().delete(id)) persist();
+  mutateEncryptedFile(encPath(), legacyPath(), EMPTY_FILE, (f) => {
+    if (!(id in f.sessions)) return f;
+    const sessions = { ...f.sessions };
+    delete sessions[id];
+    return { v: 1 as const, sessions };
+  });
 }
 
 /** Reject if session was created without binding or client fingerprint changed. */
@@ -173,7 +158,7 @@ export function ensureSessionClientBinding(
   sessionId: string,
   binding: string,
 ): "ok" | "missing" | "mismatch" {
-  const s = getMap().get(sessionId);
+  const s = getSession(sessionId);
   if (!s) return "missing";
   if (!s.clientIpHash || s.clientIpHash !== binding) return "mismatch";
   return "ok";
@@ -185,11 +170,14 @@ export function isTimestampValid(timestampMs: number): boolean {
 }
 
 export function touchSessionHardware(sessionId: string): void {
-  const s = getMap().get(sessionId);
-  if (s) {
-    s.lastHardwareAt = Date.now();
-    persist();
-  }
+  const now = Date.now();
+  mutateEncryptedFile(encPath(), legacyPath(), EMPTY_FILE, (f) => {
+    const sessions = pruneSessions(f.sessions, now);
+    const s = sessions[sessionId];
+    if (!s) return f;
+    sessions[sessionId] = { ...s, lastHardwareAt: now };
+    return { v: 1 as const, sessions };
+  });
 }
 
 export function isHardwareFreshForRead(sessionId: string): boolean {

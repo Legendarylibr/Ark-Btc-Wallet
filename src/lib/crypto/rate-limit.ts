@@ -1,16 +1,6 @@
 import path from "path";
 import { getWalletDataDir } from "@/lib/data-dir";
-import {
-  readEncryptedFile,
-  writeEncryptedFile,
-} from "@/lib/encrypted-file";
-
-type BucketGlobal = typeof globalThis & {
-  __arkRateLimits?: Map<string, { count: number; resetAt: number }>;
-  __arkRateLimitsLoaded?: boolean;
-};
-
-const g = globalThis as BucketGlobal;
+import { mutateEncryptedFile } from "@/lib/encrypted-file";
 
 interface RateLimitFile {
   v: 1;
@@ -27,36 +17,30 @@ function legacyPath(): string {
   return path.join(getWalletDataDir(), "rate-limits.json");
 }
 
-function getBuckets(): Map<string, { count: number; resetAt: number }> {
-  if (!g.__arkRateLimits) g.__arkRateLimits = new Map();
-  if (!g.__arkRateLimitsLoaded) {
-    g.__arkRateLimitsLoaded = true;
-    const file = readEncryptedFile(encPath(), legacyPath(), EMPTY);
-    const now = Date.now();
-    for (const [key, entry] of Object.entries(file.entries)) {
-      if (now <= entry.resetAt) g.__arkRateLimits.set(key, entry);
-    }
+function pruneEntries(
+  entries: RateLimitFile["entries"],
+  now: number,
+): RateLimitFile["entries"] {
+  const pruned: RateLimitFile["entries"] = {};
+  for (const [key, entry] of Object.entries(entries)) {
+    if (now <= entry.resetAt) pruned[key] = entry;
   }
-  return g.__arkRateLimits;
+  return pruned;
 }
 
-function persist(): void {
-  const entries: RateLimitFile["entries"] = {};
-  for (const [key, entry] of getBuckets()) entries[key] = entry;
-  writeEncryptedFile(encPath(), { v: 1, entries });
+function readRateLimitFile(): RateLimitFile {
+  const now = Date.now();
+  return mutateEncryptedFile(encPath(), legacyPath(), EMPTY, (f) => {
+    const entries = pruneEntries(f.entries, now);
+    if (Object.keys(entries).length === Object.keys(f.entries).length) {
+      return f;
+    }
+    return { v: 1 as const, entries };
+  });
 }
 
 export function pruneRateLimitStore(): void {
-  const buckets = getBuckets();
-  const now = Date.now();
-  let changed = false;
-  for (const [key, entry] of buckets) {
-    if (now > entry.resetAt) {
-      buckets.delete(key);
-      changed = true;
-    }
-  }
-  if (changed) persist();
+  readRateLimitFile();
 }
 
 export function rateLimit(
@@ -64,19 +48,25 @@ export function rateLimit(
   limit: number,
   windowMs: number,
 ): boolean {
-  pruneRateLimitStore();
+  let allowed = false;
   const now = Date.now();
-  const buckets = getBuckets();
-  const entry = buckets.get(key);
-  if (!entry || now > entry.resetAt) {
-    buckets.set(key, { count: 1, resetAt: now + windowMs });
-    persist();
-    return true;
-  }
-  if (entry.count >= limit) return false;
-  entry.count += 1;
-  persist();
-  return true;
+  mutateEncryptedFile(encPath(), legacyPath(), EMPTY, (f) => {
+    const entries = pruneEntries(f.entries, now);
+    const entry = entries[key];
+    if (!entry || now > entry.resetAt) {
+      entries[key] = { count: 1, resetAt: now + windowMs };
+      allowed = true;
+      return { v: 1 as const, entries };
+    }
+    if (entry.count >= limit) {
+      allowed = false;
+      return { v: 1 as const, entries };
+    }
+    entries[key] = { count: entry.count + 1, resetAt: entry.resetAt };
+    allowed = true;
+    return { v: 1 as const, entries };
+  });
+  return allowed;
 }
 
 /** Only trust X-Forwarded-For when TRUST_PROXY=true (behind a real reverse proxy). */

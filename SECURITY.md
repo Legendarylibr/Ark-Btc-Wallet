@@ -44,7 +44,7 @@ Passkey (PRF) mode requires a **recovery passphrase** at create. Pay / Secure / 
 - Balance / history / receive address require **recent WebAuthn** (same window as auto-lock)
 - `POST /api/wallet/sync` only triggers barkd sync — **no balance in the response** (use read-protected GET balance)
 - Register challenges and setup tokens persist encrypted on disk (survive restart)
-- Persisted pending ops, WebAuthn challenges, and rate limits across restarts
+- Persisted pending ops, WebAuthn challenges, and rate limits across restarts (disk-authoritative under file lock — safe across multiple Node workers sharing `.ark-wallet-data`)
 - Session binding (IP + User-Agent) set at register; **destroy session** on mismatch (no lazy bind)
 - Unlock failures require a single-use token from `unlock-check`, bound to client fingerprint (blocks blind `unlock-failed` spam)
 - `GET /api/health` reports **daemon reachability only** (not whether a barkd wallet file exists)

@@ -1,10 +1,6 @@
 import path from "path";
 import { getWalletDataDir } from "@/lib/data-dir";
-import {
-  mutateEncryptedFile,
-  readEncryptedFile,
-  writeEncryptedFile,
-} from "@/lib/encrypted-file";
+import { mutateEncryptedFile } from "@/lib/encrypted-file";
 
 export interface StoredWebAuthnCredential {
   credentialId: string;
@@ -21,13 +17,6 @@ interface WebAuthnFile {
 
 const EMPTY: WebAuthnFile = { v: 1, credentials: {} };
 
-type WebAuthnGlobal = typeof globalThis & {
-  __arkWebAuthn?: Map<string, StoredWebAuthnCredential>;
-  __arkWebAuthnLoaded?: boolean;
-};
-
-const g = globalThis as WebAuthnGlobal;
-
 function encPath(): string {
   return path.join(getWalletDataDir(), "webauthn.enc.json");
 }
@@ -36,51 +25,22 @@ function legacyPath(): string {
   return path.join(getWalletDataDir(), "webauthn.json");
 }
 
-function loadFile(): WebAuthnFile {
-  return readEncryptedFile(encPath(), legacyPath(), EMPTY);
+function readWebAuthnFile(): WebAuthnFile {
+  return mutateEncryptedFile(encPath(), legacyPath(), EMPTY, (f) => f);
 }
 
-function writeFile(data: WebAuthnFile): void {
-  writeEncryptedFile(encPath(), data);
-}
-
-function getMap(): Map<string, StoredWebAuthnCredential> {
-  if (!g.__arkWebAuthn) g.__arkWebAuthn = new Map();
-  if (!g.__arkWebAuthnLoaded) {
-    g.__arkWebAuthnLoaded = true;
-    const file = loadFile();
-    for (const [fp, cred] of Object.entries(file.credentials)) {
-      g.__arkWebAuthn.set(fp, { ...cred });
-    }
-  }
-  return g.__arkWebAuthn;
-}
-
-function persist(): void {
-  const credentials: WebAuthnFile["credentials"] = {};
-  for (const [fp, cred] of getMap()) credentials[fp] = cred;
-  writeFile({ v: 1, credentials });
-}
-
-function setCached(fingerprint: string, cred: StoredWebAuthnCredential): void {
-  getMap().set(fingerprint, { ...cred });
-}
-
-/** Reload one credential from disk into cache (multi-worker counter sync). */
+/** Disk-authoritative credential read (multi-worker safe). */
 export function syncWebAuthnCredentialFromDisk(
   fingerprint: string,
 ): StoredWebAuthnCredential | null {
-  const file = loadFile();
-  const cred = file.credentials[fingerprint];
-  if (!cred) return null;
-  setCached(fingerprint, cred);
-  return { ...cred };
+  const cred = readWebAuthnFile().credentials[fingerprint];
+  return cred ? { ...cred } : null;
 }
 
 export function getWebAuthnCredential(
   fingerprint: string,
 ): StoredWebAuthnCredential | null {
-  return getMap().get(fingerprint) ?? null;
+  return syncWebAuthnCredentialFromDisk(fingerprint);
 }
 
 export function hasWebAuthnCredential(fingerprint: string): boolean {
@@ -98,7 +58,6 @@ export function saveWebAuthnCredential(
     saved = true;
     return file;
   });
-  if (saved) setCached(fingerprint, cred);
   return saved;
 }
 
@@ -107,23 +66,18 @@ export function updateWebAuthnCounter(
   fingerprint: string,
   counter: number,
 ): void {
-  let updated: StoredWebAuthnCredential | null = null;
   mutateEncryptedFile(encPath(), legacyPath(), EMPTY, (file) => {
     const c = file.credentials[fingerprint];
     if (c && counter > c.counter) {
       c.counter = counter;
-      updated = { ...c };
     }
     return file;
   });
-  if (updated) setCached(fingerprint, updated);
 }
 
-/** Test-only: clear in-memory cache (disk file unchanged). */
+/** Test-only: no-op (store is disk-authoritative; kept for test API stability). */
 export function resetWebAuthnMemoryCacheForTests(): void {
   if (process.env.NODE_ENV === "production") {
     throw new Error("resetWebAuthnMemoryCacheForTests is not allowed in production");
   }
-  g.__arkWebAuthn = undefined;
-  g.__arkWebAuthnLoaded = false;
 }

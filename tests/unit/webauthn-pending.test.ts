@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import {
   consumePendingOp,
   createPendingOp,
@@ -8,11 +8,15 @@ import {
   VALID_PENDING_OP_TYPES,
 } from "@/lib/webauthn/pending-op";
 import { HARDWARE_REQUIRED_PATHS } from "@/lib/webauthn/constants";
+import { cleanupTempWalletDataDirs, useTempWalletDataDir } from "../helpers/env";
 
 describe("webauthn pending-op", () => {
+  afterEach(() => cleanupTempWalletDataDirs());
+
   const creatorPk = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
 
   it("matches and consumes once", () => {
+    useTempWalletDataDir();
     const fp = "fp-1";
     const hash = "body-hash-abc";
     const id = createPendingOp(fp, "send", hash, creatorPk);
@@ -22,6 +26,7 @@ describe("webauthn pending-op", () => {
   });
 
   it("invalidates pending op", () => {
+    useTempWalletDataDir();
     const id = createPendingOp("fp", "refresh", "h1", creatorPk);
     invalidatePendingOp(id);
     expect(matchesPendingOp(id, "fp", "refresh", "h1")).toBe(false);
