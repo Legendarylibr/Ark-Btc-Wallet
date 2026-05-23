@@ -7,7 +7,7 @@ import {
   SERVER_SESSION_IDLE_MS,
   SERVER_SESSION_TTL_MS,
 } from "@/lib/security/constants";
-import { base64ToBytes, bytesToBase64 } from "./ed25519";
+import { base64ToBytes } from "./ed25519";
 
 export { SESSION_COOKIE } from "./cookie";
 
