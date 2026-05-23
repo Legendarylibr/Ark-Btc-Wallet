@@ -7,8 +7,13 @@ import { trustedScriptUrlAllowed } from "@/lib/security/trusted-script-url";
 export function installTrustedTypesPolicy(): void {
   if (typeof window === "undefined") return;
   const tt = window.trustedTypes;
-  if (!tt?.createPolicy) return;
-  if (tt.getPolicy(TRUSTED_TYPES_POLICY_NAME)) return;
+  if (typeof tt?.createPolicy !== "function") return;
+  if (
+    typeof tt.getPolicy === "function" &&
+    tt.getPolicy(TRUSTED_TYPES_POLICY_NAME)
+  ) {
+    return;
+  }
 
   const origin = window.location.origin;
 
