@@ -9,12 +9,14 @@ import {
 } from "@/lib/crypto/canonical";
 import { arkClientHeaders } from "@/lib/ark-client";
 import { bytesToBase64, sign } from "@/lib/crypto/ed25519";
+import { assertSecureBrowserContext } from "@/lib/security/execution-context";
 
 export async function signedFetch(
   identity: UnlockedIdentity,
   input: string,
   init: RequestInit = {},
 ): Promise<Response> {
+  assertSecureBrowserContext();
   const method = (init.method ?? "GET").toUpperCase();
   const url = new URL(input, window.location.origin);
   const path = signingPath(url.pathname, url.search);

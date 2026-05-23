@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
+import { SecuritySentinel } from "@/components/SecuritySentinel";
 import "./globals.css";
 
 /** Required so middleware `x-nonce` applies (static HTML breaks nonce CSP). */
@@ -34,7 +35,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={geist.variable}>
-      <body className="antialiased min-h-dvh">{children}</body>
+      <body className="antialiased min-h-dvh">
+        <SecuritySentinel />
+        {children}
+      </body>
     </html>
   );
 }

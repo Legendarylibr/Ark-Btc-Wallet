@@ -13,3 +13,8 @@ import ArkWallet.Tests.Inbound
 import ArkWallet.Tests.WebAuthn
 import ArkWallet.Tests.Verify
 import ArkWallet.Tests.Complete
+import ArkWallet.Tests.BrowserSecurity
+import ArkWallet.Security.Csp
+import ArkWallet.Security.ExecutionContext
+import ArkWallet.Security.ThreatGuard
+import ArkWallet.Security.TrustedScriptUrl

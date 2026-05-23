@@ -68,6 +68,10 @@ def propertyCatalog : List PropertyId := [
   ⟨"P2-3", true, "ArkWallet.Routes.Health"⟩,
   ⟨"P2-4", true, "ArkWallet.Routes.AuthFlows"⟩,
   ⟨"SDK-1", true, "ArkWallet.Sdk.PasskeyChallenge"⟩,
+  ⟨"BR-1", true, "ArkWallet.Security.Csp"⟩,
+  ⟨"BR-2", true, "ArkWallet.Security.ThreatGuard"⟩,
+  ⟨"BR-3", true, "ArkWallet.Security.ExecutionContext"⟩,
+  ⟨"BR-4", true, "ArkWallet.Security.TrustedScriptUrl"⟩,
 ]
 
 end ArkWallet.Refinement

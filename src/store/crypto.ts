@@ -264,6 +264,7 @@ export const useCryptoStore = create<CryptoState>((set, get) => ({
   },
 
   touchActivity: () => {
+    if (!get().identity) return;
     const t = get().lockTimer;
     if (t) clearTimeout(t);
     const timer = setTimeout(() => {
