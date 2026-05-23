@@ -80,9 +80,12 @@ async function walletApiWithReadAccess(
   path: string,
   init: RequestInit = {},
 ): Promise<Response> {
+  const identity = getIdentity();
   const emptyHash = hashBody("");
   const opId = await startPendingOp("read-access", emptyHash);
-  const hwHeaders = await hardwareAuthHeaders(opId);
+  const hwHeaders = await hardwareAuthHeaders(opId, (p, i) =>
+    signedFetch(identity, p, i),
+  );
   const headers = new Headers(init.headers);
   for (const [k, v] of Object.entries(hwHeaders)) {
     headers.set(k, v);
@@ -105,6 +108,7 @@ export async function walletApiWithHardware(
   path: string,
   init: RequestInit = {},
 ): Promise<Response> {
+  const identity = getIdentity();
   const url = new URL(path, window.location.origin);
   const opType = pendingOpTypeForPath(url.pathname, url.search);
   if (!opType) {
@@ -120,7 +124,9 @@ export async function walletApiWithHardware(
 
   const bodyHash = hashBody(bodyText);
   const opId = await startPendingOp(opType, bodyHash);
-  const hwHeaders = await hardwareAuthHeaders(opId);
+  const hwHeaders = await hardwareAuthHeaders(opId, (p, i) =>
+    signedFetch(identity, p, i),
+  );
   const headers = new Headers(init.headers);
   for (const [k, v] of Object.entries(hwHeaders)) {
     headers.set(k, v);

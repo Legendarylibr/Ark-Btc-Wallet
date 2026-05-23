@@ -10,17 +10,19 @@ import {
 import { HARDWARE_REQUIRED_PATHS } from "@/lib/webauthn/constants";
 
 describe("webauthn pending-op", () => {
+  const creatorPk = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+
   it("matches and consumes once", () => {
     const fp = "fp-1";
     const hash = "body-hash-abc";
-    const id = createPendingOp(fp, "send", hash);
+    const id = createPendingOp(fp, "send", hash, creatorPk);
     expect(matchesPendingOp(id, fp, "send", hash)).toBe(true);
     expect(consumePendingOp(id, fp, "send", hash)).toBe(true);
     expect(consumePendingOp(id, fp, "send", hash)).toBe(false);
   });
 
   it("invalidates pending op", () => {
-    const id = createPendingOp("fp", "refresh", "h1");
+    const id = createPendingOp("fp", "refresh", "h1", creatorPk);
     invalidatePendingOp(id);
     expect(matchesPendingOp(id, "fp", "refresh", "h1")).toBe(false);
   });

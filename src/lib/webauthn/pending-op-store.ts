@@ -21,6 +21,7 @@ interface PendingOpFile {
       fingerprint: string;
       type: PendingOpType;
       bodyHash: string;
+      creatorPublicKeyB64?: string;
       exp: number;
     }
   >;
@@ -43,8 +44,14 @@ function getMap(): Map<string, PendingOperation> {
     const file = readEncryptedFile(encPath(), legacyPath(), EMPTY);
     const now = Date.now();
     for (const [id, op] of Object.entries(file.ops)) {
-      if (now <= op.exp) {
-        g.__arkPendingOps.set(id, op);
+      if (now <= op.exp && op.creatorPublicKeyB64) {
+        g.__arkPendingOps.set(id, {
+          fingerprint: op.fingerprint,
+          type: op.type,
+          bodyHash: op.bodyHash,
+          creatorPublicKeyB64: op.creatorPublicKeyB64,
+          exp: op.exp,
+        });
       }
     }
   }

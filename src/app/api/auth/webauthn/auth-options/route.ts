@@ -7,6 +7,7 @@ import { getWebAuthnCredential } from "@/lib/webauthn/store";
 import { getWebAuthnConfig } from "@/lib/webauthn/config";
 import { storeWebAuthnChallenge } from "@/lib/webauthn/challenges";
 import { getPendingOpDetails } from "@/lib/webauthn/pending-op";
+import { verifyPendingOpCreatorAccess } from "@/lib/webauthn/verify-pending-op-access";
 import { HARDWARE_AUTH_UNAVAILABLE } from "@/lib/webauthn/setup-gate";
 import { clientIp, rateLimit } from "@/lib/crypto/rate-limit";
 
@@ -38,6 +39,12 @@ export async function GET(req: NextRequest) {
     if (!pending) {
       return hardwareAuthUnavailable();
     }
+
+    const creatorBlock = await verifyPendingOpCreatorAccess(
+      req,
+      pending.creatorPublicKeyB64,
+    );
+    if (creatorBlock) return creatorBlock;
 
     let fingerprint: string;
     try {

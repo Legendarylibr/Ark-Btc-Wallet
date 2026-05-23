@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runCryptoGuard } from "@/lib/api-guard";
+import { bytesToBase64 } from "@/lib/crypto/ed25519";
 import { verifyPreSessionRequest } from "@/lib/crypto/pre-session";
 import { assertApiSecurity } from "@/lib/inbound-security";
 import { barkd } from "@/lib/barkd";
@@ -13,6 +14,7 @@ import {
 } from "@/lib/webauthn/pending-op";
 import { PENDING_OP_UNAVAILABLE } from "@/lib/webauthn/setup-gate";
 import { SESSION_COOKIE } from "@/lib/crypto/cookie";
+import { getSession } from "@/lib/crypto/session-store";
 import { clientIp, rateLimit } from "@/lib/crypto/rate-limit";
 
 const VALID_TYPES = new Set<PendingOpType>(VALID_PENDING_OP_TYPES);
@@ -20,6 +22,7 @@ const VALID_TYPES = new Set<PendingOpType>(VALID_PENDING_OP_TYPES);
 async function postHandler(
   request: NextRequest,
   bodyText: string,
+  creatorPublicKeyB64: string,
 ): Promise<NextResponse> {
   const parsed = parseJsonBody<{ type?: string; bodyHash?: string }>(bodyText);
   if (!parsed.ok) {
@@ -52,6 +55,7 @@ async function postHandler(
     fingerprint,
     type as PendingOpType,
     bodyHash,
+    creatorPublicKeyB64,
   );
 
   return NextResponse.json({ opId, expiresIn: 120 });
@@ -70,8 +74,33 @@ export async function POST(req: NextRequest) {
   if (!body.ok) return body.response;
 
   const sid = req.cookies.get(SESSION_COOKIE)?.value;
-  if (sid && getSessionFingerprint(req)) {
-    return runCryptoGuard(req, body.text, postHandler);
+  if (sid) {
+    if (!getSession(sid)) {
+      return NextResponse.json(
+        { error: "Session expired — unlock wallet again" },
+        { status: 401 },
+      );
+    }
+    if (getSessionFingerprint(req)) {
+      return runCryptoGuard(req, body.text, async (request, bodyText) => {
+        const session = getSession(sid);
+        if (!session) {
+          return NextResponse.json(
+            { error: "Session expired — unlock wallet again" },
+            { status: 401 },
+          );
+        }
+        return postHandler(
+          request,
+          bodyText,
+          bytesToBase64(session.publicKey),
+        );
+      });
+    }
+    return NextResponse.json(
+      { error: "Session invalid — unlock wallet again" },
+      { status: 401 },
+    );
   }
 
   if (!rateLimit(`pending-op-pre:${ip}`, 12, 60_000)) {
@@ -81,5 +110,5 @@ export async function POST(req: NextRequest) {
   const pre = await verifyPreSessionRequest(req, body.text);
   if (pre instanceof NextResponse) return pre;
 
-  return postHandler(req, body.text);
+  return postHandler(req, body.text, pre.publicKeyB64);
 }

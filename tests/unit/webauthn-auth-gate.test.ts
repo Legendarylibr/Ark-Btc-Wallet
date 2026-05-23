@@ -11,6 +11,8 @@ vi.mock("@/lib/barkd", () => ({
 }));
 
 describe("GET /api/auth/webauthn/auth-options", () => {
+  const creatorPk = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+
   afterEach(() => {
     cleanupTempWalletDataDirs();
     vi.clearAllMocks();
@@ -36,7 +38,7 @@ describe("GET /api/auth/webauthn/auth-options", () => {
     expect(randomOp.status).toBe(401);
     expect(await randomOp.json()).toEqual({ error: HARDWARE_AUTH_UNAVAILABLE });
 
-    const opId = createPendingOp("fp-test", "read-access", "abc");
+    const opId = createPendingOp("fp-test", "read-access", "abc", creatorPk);
     const noFp = await GET(
       apiRequest(`/api/auth/webauthn/auth-options?opId=${opId}`),
     );

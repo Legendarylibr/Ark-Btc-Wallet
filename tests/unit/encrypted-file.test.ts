@@ -19,6 +19,18 @@ describe("encrypted-file", () => {
     expect(loaded).toEqual({ count: 42 });
   });
 
+  it("leaves no temp files after atomic write", () => {
+    const dir = useTempWalletDataDir();
+    const encPath = path.join(dir, "atomic.enc.json");
+    const legacyPath = path.join(dir, "atomic.json");
+    writeEncryptedFile(encPath, { step: 1 });
+    const tmpFiles = fs.readdirSync(dir).filter((f) => f.endsWith(".tmp"));
+    expect(tmpFiles).toHaveLength(0);
+    expect(readEncryptedFile(encPath, legacyPath, { step: 0 })).toEqual({
+      step: 1,
+    });
+  });
+
   it("migrates legacy plaintext and removes legacy file", () => {
     const dir = useTempWalletDataDir();
     const encPath = path.join(dir, "migrate.enc.json");

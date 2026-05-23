@@ -185,7 +185,10 @@ export const useCryptoStore = create<CryptoState>((set, get) => ({
         { type: "session-register", bodyHash },
       );
 
-      const hardwareAuth = await authenticateWithHardware(opId);
+      const hardwareAuth = await authenticateWithHardware(
+        opId,
+        (p, i) => signedFetch(identity, p, i),
+      );
 
       const reg = await fetch("/api/auth/register", {
         method: "POST",
@@ -242,11 +245,21 @@ export const useCryptoStore = create<CryptoState>((set, get) => ({
       pairingNotice: null,
       lockTimer: null,
     });
-    await fetch("/api/auth/logout", {
-      method: "POST",
-      headers: { [LOGOUT_HEADER]: "1", ...arkClientHeaders() },
-      credentials: "same-origin",
-    });
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const res = await fetch("/api/auth/logout", {
+          method: "POST",
+          headers: { [LOGOUT_HEADER]: "1", ...arkClientHeaders() },
+          credentials: "same-origin",
+        });
+        if (res.ok) break;
+      } catch {
+        /* retry */
+      }
+      if (attempt < 2) {
+        await new Promise((r) => setTimeout(r, 200 * (attempt + 1)));
+      }
+    }
     clearClientEphemeralData();
   },
 
