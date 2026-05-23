@@ -7,13 +7,18 @@ import {
 } from "@/lib/crypto/setup-token";
 import {
   getWebAuthnCredential,
+  resetWebAuthnMemoryCacheForTests,
   saveWebAuthnCredential,
+  syncWebAuthnCredentialFromDisk,
   updateWebAuthnCounter,
 } from "@/lib/webauthn/store";
 import { cleanupTempWalletDataDirs, useTempWalletDataDir } from "../helpers/env";
 
 describe("webauthn store", () => {
-  afterEach(() => cleanupTempWalletDataDirs());
+  afterEach(() => {
+    cleanupTempWalletDataDirs();
+    resetWebAuthnMemoryCacheForTests();
+  });
 
   it("only advances counter monotonically", () => {
     useTempWalletDataDir();
@@ -34,6 +39,23 @@ describe("webauthn store", () => {
 
     updateWebAuthnCounter(fp, 6);
     expect(getWebAuthnCredential(fp)?.counter).toBe(8);
+  });
+
+  it("syncWebAuthnCredentialFromDisk picks up counter from disk", () => {
+    useTempWalletDataDir();
+    const fp = "sync-fp";
+    saveWebAuthnCredential(fp, {
+      credentialId: "cred-id",
+      publicKey: "pk",
+      counter: 3,
+      deviceType: "singleDevice",
+      registeredAt: Date.now(),
+    });
+    updateWebAuthnCounter(fp, 9);
+    resetWebAuthnMemoryCacheForTests();
+    const synced = syncWebAuthnCredentialFromDisk(fp);
+    expect(synced?.counter).toBe(9);
+    expect(getWebAuthnCredential(fp)?.counter).toBe(9);
   });
 });
 

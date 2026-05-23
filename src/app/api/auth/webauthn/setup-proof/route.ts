@@ -45,6 +45,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: proof.error }, { status: 401 });
     }
 
+    if (
+      !rateLimit(
+        `webauthn-setup-pk:${proof.publicKeyB64.slice(0, 16)}`,
+        3,
+        60_000,
+      )
+    ) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     let fingerprint: string;
     try {
       const { fingerprint: fp } = await barkd.walletStatus();

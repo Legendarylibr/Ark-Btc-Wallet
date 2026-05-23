@@ -23,7 +23,9 @@ export async function verifyPendingOpCreatorAccess(
   if (!creatorPublicKeyB64) return unavailable();
 
   const sid = request.cookies.get(SESSION_COOKIE)?.value;
-  if (sid && getSession(sid)) {
+  const session = sid ? getSession(sid) : null;
+
+  if (session) {
     const auth = await verifySignedRequest(request, bodyText);
     if (auth instanceof NextResponse) return unavailable();
     const pkB64 = bytesToBase64(auth.publicKey);
@@ -31,6 +33,10 @@ export async function verifyPendingOpCreatorAccess(
       return unavailable();
     }
     return null;
+  }
+
+  if (sid && !session) {
+    /* Stale session cookie — allow pre-session path (unlock after failed logout). */
   }
 
   const pre = await verifyPreSessionRequest(request, bodyText);
