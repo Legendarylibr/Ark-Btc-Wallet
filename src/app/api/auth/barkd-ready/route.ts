@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { hashClientBinding } from "@/lib/client-binding";
 import { assertApiSecurity } from "@/lib/inbound-security";
 import { verifyPreSessionRequest } from "@/lib/crypto/pre-session";
-import { consumeUnlockAttemptToken } from "@/lib/crypto/unlock-attempt-token";
+import {
+  consumeUnlockAttemptToken,
+  validateUnlockAttemptToken,
+} from "@/lib/crypto/unlock-attempt-token";
 import {
   getFingerprintForPubkey,
   getPinnedPubkey,
@@ -40,7 +43,7 @@ export async function POST(req: NextRequest) {
   const binding = hashClientBinding(req);
   if (
     !unlockToken ||
-    !consumeUnlockAttemptToken(unlockToken, binding)
+    !validateUnlockAttemptToken(unlockToken, binding)
   ) {
     return NextResponse.json(
       { error: "Invalid or expired unlock token" },
@@ -50,6 +53,13 @@ export async function POST(req: NextRequest) {
 
   const pre = await verifyPreSessionRequest(req, body.text);
   if (pre instanceof NextResponse) return pre;
+
+  if (!consumeUnlockAttemptToken(unlockToken, binding)) {
+    return NextResponse.json(
+      { error: "Invalid or expired unlock token" },
+      { status: 401 },
+    );
+  }
 
   return withMinResponseDelay(async () => {
     try {

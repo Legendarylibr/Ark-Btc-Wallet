@@ -13,6 +13,7 @@ interface PendingOpFile {
       bodyHash: string;
       creatorPublicKeyB64?: string;
       exp: number;
+      optionsIssuedAt?: number;
     }
   >;
 }
@@ -87,6 +88,60 @@ export function deletePendingOp(id: string): boolean {
     return { v: 1 as const, ops };
   });
   return deleted;
+}
+
+/** Atomically match pending op fields and delete (single-use). */
+export function atomicConsumePendingOp(
+  id: string,
+  fingerprint: string,
+  type: PendingOpType,
+  bodyHash: string,
+): boolean {
+  let consumed = false;
+  mutateEncryptedFile(encPath(), legacyPath(), EMPTY, (f) => {
+    const ops = pruneOps(f.ops);
+    const op = ops[id];
+    if (
+      !op ||
+      op.fingerprint !== fingerprint ||
+      op.type !== type ||
+      op.bodyHash !== bodyHash
+    ) {
+      return { v: 1 as const, ops };
+    }
+    delete ops[id];
+    consumed = true;
+    return { v: 1 as const, ops };
+  });
+  return consumed;
+}
+
+const AUTH_OPTIONS_COOLDOWN_MS = 60_000;
+
+/** Issue WebAuthn auth-options at most once per minute per pending op. */
+export function atomicClaimPendingOpAuthOptions(
+  id: string,
+  fingerprint: string,
+): boolean {
+  let claimed = false;
+  const now = Date.now();
+  mutateEncryptedFile(encPath(), legacyPath(), EMPTY, (f) => {
+    const ops = pruneOps(f.ops);
+    const op = ops[id];
+    if (!op || op.fingerprint !== fingerprint) {
+      return { v: 1 as const, ops };
+    }
+    if (
+      op.optionsIssuedAt != null &&
+      now - op.optionsIssuedAt < AUTH_OPTIONS_COOLDOWN_MS
+    ) {
+      return { v: 1 as const, ops };
+    }
+    ops[id] = { ...op, optionsIssuedAt: now };
+    claimed = true;
+    return { v: 1 as const, ops };
+  });
+  return claimed;
 }
 
 /** Test-only: no-op (store is disk-authoritative; kept for test API stability). */

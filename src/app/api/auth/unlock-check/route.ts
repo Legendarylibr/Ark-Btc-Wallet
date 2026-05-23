@@ -3,7 +3,7 @@ import { hashClientBinding } from "@/lib/client-binding";
 import { assertApiSecurity } from "@/lib/inbound-security";
 import { issueUnlockAttemptToken } from "@/lib/crypto/unlock-attempt-token";
 import { clientIp, rateLimit } from "@/lib/crypto/rate-limit";
-import { unlockAttemptAllowed } from "@/lib/crypto/unlock-rate-limit";
+import { unlockAttemptAllowed, claimUnlockCheckSlot } from "@/lib/crypto/unlock-rate-limit";
 
 export async function POST(req: NextRequest) {
   const block = assertApiSecurity(req);
@@ -15,6 +15,13 @@ export async function POST(req: NextRequest) {
   }
 
   if (!unlockAttemptAllowed(ip)) {
+    return NextResponse.json(
+      { allowed: false, error: "Too many unlock attempts — wait 15 minutes" },
+      { status: 429 },
+    );
+  }
+
+  if (!claimUnlockCheckSlot(ip)) {
     return NextResponse.json(
       { allowed: false, error: "Too many unlock attempts — wait 15 minutes" },
       { status: 429 },

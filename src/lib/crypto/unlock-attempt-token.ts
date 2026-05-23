@@ -2,6 +2,7 @@ import { deleteExpiringKey } from "@/lib/persisted-scoped-store";
 import { isValidNonceUuid } from "./nonce-format";
 import {
   consumeUnlockTokenBinding,
+  getUnlockTokenBinding,
   putUnlockTokenBinding,
 } from "./unlock-token-binding-store";
 
@@ -13,6 +14,16 @@ export function issueUnlockAttemptToken(clientBinding: string): string {
   const id = crypto.randomUUID();
   putUnlockTokenBinding(id, clientBinding, Date.now() + TOKEN_TTL_MS);
   return id;
+}
+
+/** Peek binding without consuming (verify-then-consume flows). */
+export function validateUnlockAttemptToken(
+  token: string,
+  clientBinding: string,
+): boolean {
+  if (!isValidNonceUuid(token)) return false;
+  const binding = getUnlockTokenBinding(token);
+  return binding === clientBinding;
 }
 
 export function consumeUnlockAttemptToken(

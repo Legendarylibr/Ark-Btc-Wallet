@@ -8,7 +8,10 @@ import type {
   RegistrationResponseJSON,
 } from "@simplewebauthn/server";
 import { getWebAuthnConfig } from "./config";
-import { consumeWebAuthnChallenge as consumeChallenge } from "./challenges";
+import {
+  consumeWebAuthnChallenge as consumeChallenge,
+  hasWebAuthnChallenge,
+} from "./challenges";
 import {
   getWebAuthnCredential,
   saveWebAuthnCredential,
@@ -38,7 +41,8 @@ export async function verifyHardwareRegistration(
   expectedChallenge: string,
   response: RegistrationResponseJSON,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  if (!consumeChallenge(`reg:${fingerprint}`, expectedChallenge)) {
+  const regScope = `reg:${fingerprint}`;
+  if (!hasWebAuthnChallenge(regScope, expectedChallenge)) {
     return { ok: false, error: "Registration challenge expired" };
   }
 
@@ -74,6 +78,10 @@ export async function verifyHardwareRegistration(
       return { ok: false, error: "Hardware key already registered" };
     }
 
+    if (!consumeChallenge(regScope, expectedChallenge)) {
+      return { ok: false, error: "Registration challenge expired" };
+    }
+
     return { ok: true };
   } catch {
     return { ok: false, error: "Invalid hardware registration" };
@@ -98,7 +106,8 @@ export async function verifyHardwareAuthentication(
     return { ok: false, error: "Hardware credential mismatch" };
   }
 
-  if (!consumeChallenge(`auth:${fingerprint}:${opId}`, expectedChallenge)) {
+  const authScope = `auth:${fingerprint}:${opId}`;
+  if (!hasWebAuthnChallenge(authScope, expectedChallenge)) {
     return { ok: false, error: "Authentication challenge expired" };
   }
 
@@ -122,6 +131,10 @@ export async function verifyHardwareAuthentication(
       fingerprint,
       verification.authenticationInfo.newCounter,
     );
+
+    if (!consumeChallenge(authScope, expectedChallenge)) {
+      return { ok: false, error: "Authentication challenge expired" };
+    }
 
     return { ok: true };
   } catch {

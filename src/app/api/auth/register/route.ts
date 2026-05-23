@@ -88,13 +88,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Replay detected" }, { status: 401 });
     }
 
-    if (!consumeChallenge(challenge)) {
-      return NextResponse.json(
-        { error: "Challenge expired or invalid" },
-        { status: 401 },
-      );
-    }
-
     if (!(await barkd.walletExists())) {
       return NextResponse.json(
         { error: "barkd wallet required before registering a session" },
@@ -124,6 +117,13 @@ export async function POST(req: NextRequest) {
     const pin = verifyOrPinPubkey(fingerprint, publicKey);
     if (!pin.ok) {
       return NextResponse.json({ error: pin.reason }, { status: 403 });
+    }
+
+    if (!consumeChallenge(challenge)) {
+      return NextResponse.json(
+        { error: "Challenge expired or invalid" },
+        { status: 401 },
+      );
     }
 
     const session = createSession(

@@ -9,6 +9,5 @@ export function hashClientBinding(request: Request): string {
   const ip = clientIp(request);
   return createHash("sha256")
     .update(`${ip}\n${ua}\n${lang}\n${secChUa}`)
-    .digest("hex")
-    .slice(0, 16);
+    .digest("hex");
 }
