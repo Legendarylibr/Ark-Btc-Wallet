@@ -120,15 +120,26 @@ export async function createPendingOp(
   return data.opId;
 }
 
-export async function authenticateWithHardware(opId: string): Promise<{
+export async function authenticateWithHardware(
+  opId: string,
+  signedFetchFn: (path: string, init?: RequestInit) => Promise<Response>,
+): Promise<{
   response: AuthenticationResponseJSON;
   challenge: string;
   opId: string;
 }> {
-  const { options, challenge } = await apiJson<{
+  const path = `/api/auth/webauthn/auth-options?opId=${encodeURIComponent(opId)}`;
+  const res = await signedFetchFn(path, { method: "GET" });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(
+      (data as { error?: string }).error ?? "Hardware request failed",
+    );
+  }
+  const { options, challenge } = data as {
     options: PublicKeyCredentialRequestOptionsJSON;
     challenge: string;
-  }>(`/api/auth/webauthn/auth-options?opId=${encodeURIComponent(opId)}`);
+  };
 
   const authResp = await startAuthentication({ optionsJSON: options });
   return { response: authResp, challenge, opId };
@@ -137,8 +148,12 @@ export async function authenticateWithHardware(opId: string): Promise<{
 /** Payload for x-wallet-hardware-auth + x-wallet-pending-op headers */
 export async function hardwareAuthHeaders(
   opId: string,
+  signedFetchFn: (path: string, init?: RequestInit) => Promise<Response>,
 ): Promise<Record<string, string>> {
-  const { response, challenge } = await authenticateWithHardware(opId);
+  const { response, challenge } = await authenticateWithHardware(
+    opId,
+    signedFetchFn,
+  );
   return {
     [HARDWARE_AUTH_HEADER]: JSON.stringify({ response, challenge, opId }),
     [PENDING_OP_HEADER]: opId,

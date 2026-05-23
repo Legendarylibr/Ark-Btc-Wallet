@@ -9,6 +9,8 @@ export interface StoredSetupToken {
   publicKeyB64: string;
   fingerprint: string;
   exp: number;
+  /** Last register-options issue time — limits prompt spam per token. */
+  optionsIssuedAt?: number;
 }
 
 type SetupGlobal = typeof globalThis & {

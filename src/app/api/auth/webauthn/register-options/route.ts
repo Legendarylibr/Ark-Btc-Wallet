@@ -5,7 +5,7 @@ import { barkd } from "@/lib/barkd";
 import { hasWebAuthnCredential } from "@/lib/webauthn/store";
 import { getWebAuthnConfig } from "@/lib/webauthn/config";
 import { storeWebAuthnChallenge } from "@/lib/webauthn/challenges";
-import { validateSetupToken } from "@/lib/crypto/setup-token";
+import { claimSetupTokenForOptions } from "@/lib/crypto/setup-token";
 import { SETUP_TOKEN_HEADER } from "@/lib/webauthn/constants";
 import {
   SETUP_CANNOT_CONTINUE,
@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
       return vaultProofRequired();
     }
 
-    if (!fingerprint || !validateSetupToken(setupToken, fingerprint)) {
+    if (!fingerprint || !claimSetupTokenForOptions(setupToken, fingerprint)) {
       return vaultProofRequired();
     }
 

@@ -18,6 +18,8 @@ export interface PendingOperation {
   fingerprint: string;
   type: PendingOpType;
   bodyHash: string;
+  /** Ed25519 public key (base64) that created this op — required for auth-options. */
+  creatorPublicKeyB64: string;
   exp: number;
 }
 
@@ -27,6 +29,7 @@ export function createPendingOp(
   fingerprint: string,
   type: PendingOpType,
   bodyHash: string,
+  creatorPublicKeyB64: string,
 ): string {
   prunePendingOps();
   const id = crypto.randomUUID();
@@ -34,6 +37,7 @@ export function createPendingOp(
     fingerprint,
     type,
     bodyHash,
+    creatorPublicKeyB64,
     exp: Date.now() + TTL_MS,
   });
   return id;

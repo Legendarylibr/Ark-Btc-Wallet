@@ -1,4 +1,5 @@
 import fs from "fs";
+import path from "path";
 import {
   createCipheriv,
   createDecipheriv,
@@ -69,7 +70,21 @@ export function readEncryptedFile<T>(
   return empty;
 }
 
+/** Atomic write: temp file + rename avoids torn ciphertext on crash or concurrent writers. */
 export function writeEncryptedFile<T>(encPath: string, data: T): void {
   const envelope = encryptJson(data);
-  fs.writeFileSync(encPath, JSON.stringify(envelope), { mode: 0o600 });
+  const dir = path.dirname(encPath);
+  fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+  const tmpPath = `${encPath}.${process.pid}.${Date.now()}.tmp`;
+  try {
+    fs.writeFileSync(tmpPath, JSON.stringify(envelope), { mode: 0o600 });
+    fs.renameSync(tmpPath, encPath);
+  } catch (e) {
+    try {
+      fs.unlinkSync(tmpPath);
+    } catch {
+      /* ignore cleanup failure */
+    }
+    throw e;
+  }
 }
