@@ -1,10 +1,7 @@
 import path from "path";
 import { getWalletDataDir } from "@/lib/data-dir";
 import { constantTimeEqualString } from "./secure-compare";
-import {
-  readEncryptedFile,
-  writeEncryptedFile,
-} from "@/lib/encrypted-file";
+import { mutateEncryptedFile } from "@/lib/encrypted-file";
 
 interface PinFile {
   v: 1;
@@ -21,12 +18,8 @@ function legacyPath(): string {
   return path.join(getWalletDataDir(), "pubkey-pins.json");
 }
 
-function load(): PinFile {
-  return readEncryptedFile(encPath(), legacyPath(), EMPTY);
-}
-
-function save(data: PinFile): void {
-  writeEncryptedFile(encPath(), data);
+function readPinFile(): PinFile {
+  return mutateEncryptedFile(encPath(), legacyPath(), EMPTY, (f) => f);
 }
 
 export type PinResult =
@@ -38,37 +31,44 @@ export function verifyOrPinPubkey(
   fingerprint: string,
   publicKeyB64: string,
 ): PinResult {
-  const data = load();
-  const existing = data.pins[fingerprint];
+  let result: PinResult = { ok: true, firstPin: false };
 
-  if (!existing) {
-    data.pins[fingerprint] = publicKeyB64;
-    save(data);
-    return { ok: true, firstPin: true };
-  }
+  mutateEncryptedFile(encPath(), legacyPath(), EMPTY, (data) => {
+    const existing = data.pins[fingerprint];
 
-  if (!constantTimeEqualString(existing, publicKeyB64)) {
-    return {
-      ok: false,
-      reason:
-        "This barkd wallet is already paired with a different signing key. Use the original device or reset .ark-wallet-data",
-    };
-  }
+    if (!existing) {
+      data.pins[fingerprint] = publicKeyB64;
+      result = { ok: true, firstPin: true };
+      return data;
+    }
 
-  return { ok: true, firstPin: false };
+    if (!constantTimeEqualString(existing, publicKeyB64)) {
+      result = {
+        ok: false,
+        reason:
+          "This barkd wallet is already paired with a different signing key. Use the original device or reset .ark-wallet-data",
+      };
+      return data;
+    }
+
+    result = { ok: true, firstPin: false };
+    return data;
+  });
+
+  return result;
 }
 
 export function getPinnedPubkey(fingerprint: string): string | null {
-  return load().pins[fingerprint] ?? null;
+  return readPinFile().pins[fingerprint] ?? null;
 }
 
 export function hasAnyPubkeyPin(): boolean {
-  return Object.keys(load().pins).length > 0;
+  return Object.keys(readPinFile().pins).length > 0;
 }
 
 /** Reverse lookup — avoids barkd walletStatus on first pairing. */
 export function getFingerprintForPubkey(publicKeyB64: string): string | null {
-  const pins = load().pins;
+  const pins = readPinFile().pins;
   for (const [fingerprint, pinned] of Object.entries(pins)) {
     if (constantTimeEqualString(pinned, publicKeyB64)) {
       return fingerprint;
@@ -78,7 +78,10 @@ export function getFingerprintForPubkey(publicKeyB64: string): string | null {
 }
 
 export function clearPin(fingerprint: string): void {
-  const data = load();
-  delete data.pins[fingerprint];
-  save(data);
+  mutateEncryptedFile(encPath(), legacyPath(), EMPTY, (data) => {
+    if (!(fingerprint in data.pins)) return data;
+    const pins = { ...data.pins };
+    delete pins[fingerprint];
+    return { v: 1 as const, pins };
+  });
 }

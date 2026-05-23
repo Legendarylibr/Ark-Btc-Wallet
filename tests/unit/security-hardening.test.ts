@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import path from "path";
 import { describe, expect, it } from "vitest";
 import {
   assertAllowedMethod,
@@ -16,6 +17,7 @@ import {
   getSession,
   touchSession,
 } from "@/lib/crypto/session-store";
+import { mutateEncryptedFile } from "@/lib/encrypted-file";
 import { cleanupTempWalletDataDirs, useTempWalletDataDir } from "../helpers/env";
 
 describe("security hardening", () => {
@@ -78,19 +80,31 @@ describe("security hardening", () => {
 
 describe("server session idle", () => {
   it("expires idle sessions", () => {
-    useTempWalletDataDir();
+    const dir = useTempWalletDataDir();
     const pk = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
     const s = createSession(pk, null, "bind");
     touchSession(s.id);
-    const map = (
-      globalThis as typeof globalThis & {
-        __arkSessions?: Map<string, { lastSeenAt: number }>;
-      }
-    ).__arkSessions;
-    const entry = map?.get(s.id);
-    if (entry) {
-      entry.lastSeenAt = Date.now() - SERVER_SESSION_IDLE_MS - 1000;
-    }
+    const encPath = path.join(dir, "sessions.enc.json");
+    const legacyPath = path.join(dir, "sessions.json");
+    mutateEncryptedFile(
+      encPath,
+      legacyPath,
+      { v: 1, sessions: {} },
+      (f) => {
+        const stored = f.sessions[s.id];
+        if (!stored) return f;
+        return {
+          v: 1 as const,
+          sessions: {
+            ...f.sessions,
+            [s.id]: {
+              ...stored,
+              lastSeenAt: Date.now() - SERVER_SESSION_IDLE_MS - 1000,
+            },
+          },
+        };
+      },
+    );
     expect(getSession(s.id)).toBeNull();
     cleanupTempWalletDataDirs();
   });

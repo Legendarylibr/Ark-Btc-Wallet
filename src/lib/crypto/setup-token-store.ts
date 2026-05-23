@@ -1,9 +1,6 @@
 import path from "path";
 import { getWalletDataDir } from "@/lib/data-dir";
-import {
-  readEncryptedFile,
-  writeEncryptedFile,
-} from "@/lib/encrypted-file";
+import { mutateEncryptedFile } from "@/lib/encrypted-file";
 
 export interface StoredSetupToken {
   publicKeyB64: string;
@@ -12,13 +9,6 @@ export interface StoredSetupToken {
   /** Last register-options issue time — limits prompt spam per token. */
   optionsIssuedAt?: number;
 }
-
-type SetupGlobal = typeof globalThis & {
-  __arkSetupTokens?: Map<string, StoredSetupToken>;
-  __arkSetupTokensLoaded?: boolean;
-};
-
-const g = globalThis as SetupGlobal;
 
 interface SetupTokenFile {
   v: 1;
@@ -35,56 +25,56 @@ function legacyPath(): string {
   return path.join(getWalletDataDir(), "setup-tokens.json");
 }
 
-function getMap(): Map<string, StoredSetupToken> {
-  if (!g.__arkSetupTokens) g.__arkSetupTokens = new Map();
-  if (!g.__arkSetupTokensLoaded) {
-    g.__arkSetupTokensLoaded = true;
-    const file = readEncryptedFile(encPath(), legacyPath(), EMPTY);
-    const now = Date.now();
-    for (const [id, entry] of Object.entries(file.tokens)) {
-      if (now <= entry.exp) g.__arkSetupTokens.set(id, entry);
-    }
+function pruneTokens(
+  tokens: SetupTokenFile["tokens"],
+  now: number,
+): SetupTokenFile["tokens"] {
+  const pruned: SetupTokenFile["tokens"] = {};
+  for (const [id, entry] of Object.entries(tokens)) {
+    if (now <= entry.exp) pruned[id] = entry;
   }
-  return g.__arkSetupTokens;
+  return pruned;
 }
 
-function persist(): void {
-  const tokens: SetupTokenFile["tokens"] = {};
-  for (const [id, entry] of getMap()) tokens[id] = entry;
-  writeEncryptedFile(encPath(), { v: 1, tokens });
+function readSetupTokenFile(): SetupTokenFile {
+  const now = Date.now();
+  return mutateEncryptedFile(encPath(), legacyPath(), EMPTY, (f) => {
+    const tokens = pruneTokens(f.tokens, now);
+    if (Object.keys(tokens).length === Object.keys(f.tokens).length) {
+      return f;
+    }
+    return { v: 1 as const, tokens };
+  });
 }
 
 export function pruneSetupTokens(): void {
-  const map = getMap();
-  const now = Date.now();
-  let changed = false;
-  for (const [id, entry] of map) {
-    if (now > entry.exp) {
-      map.delete(id);
-      changed = true;
-    }
-  }
-  if (changed) persist();
+  readSetupTokenFile();
 }
 
-export function putSetupToken(
-  id: string,
-  entry: StoredSetupToken,
-): void {
-  pruneSetupTokens();
-  getMap().set(id, entry);
-  persist();
+export function putSetupToken(id: string, entry: StoredSetupToken): void {
+  const now = Date.now();
+  mutateEncryptedFile(encPath(), legacyPath(), EMPTY, (f) => {
+    const tokens = pruneTokens(f.tokens, now);
+    tokens[id] = entry;
+    return { v: 1 as const, tokens };
+  });
 }
 
 export function getSetupToken(id: string): StoredSetupToken | undefined {
-  pruneSetupTokens();
-  const entry = getMap().get(id);
+  const file = readSetupTokenFile();
+  const entry = file.tokens[id];
   if (!entry || Date.now() > entry.exp) return undefined;
   return entry;
 }
 
 export function deleteSetupToken(id: string): boolean {
-  const deleted = getMap().delete(id);
-  if (deleted) persist();
+  let deleted = false;
+  mutateEncryptedFile(encPath(), legacyPath(), EMPTY, (f) => {
+    const tokens = pruneTokens(f.tokens, Date.now());
+    if (!(id in tokens)) return f;
+    delete tokens[id];
+    deleted = true;
+    return { v: 1 as const, tokens };
+  });
   return deleted;
 }

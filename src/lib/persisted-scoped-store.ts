@@ -1,16 +1,6 @@
 import path from "path";
 import { getWalletDataDir } from "@/lib/data-dir";
-import {
-  readEncryptedFile,
-  writeEncryptedFile,
-} from "@/lib/encrypted-file";
-
-type StoreGlobal = typeof globalThis & {
-  __arkPersistedStores?: Map<string, Map<string, number>>;
-  __arkPersistedLoaded?: Set<string>;
-};
-
-const g = globalThis as StoreGlobal;
+import { mutateEncryptedFile } from "@/lib/encrypted-file";
 
 interface ExpiringFile {
   v: 1;
@@ -18,16 +8,6 @@ interface ExpiringFile {
 }
 
 const EMPTY: ExpiringFile = { v: 1, entries: {} };
-
-function storeMap(name: string): Map<string, number> {
-  if (!g.__arkPersistedStores) g.__arkPersistedStores = new Map();
-  let map = g.__arkPersistedStores.get(name);
-  if (!map) {
-    map = new Map();
-    g.__arkPersistedStores.set(name, map);
-  }
-  return map;
-}
 
 function encPath(name: string): string {
   return path.join(getWalletDataDir(), `${name}.enc.json`);
@@ -37,38 +17,31 @@ function legacyPath(name: string): string {
   return path.join(getWalletDataDir(), `${name}.json`);
 }
 
-function load(name: string): void {
-  if (!g.__arkPersistedLoaded) g.__arkPersistedLoaded = new Set();
-  if (g.__arkPersistedLoaded.has(name)) return;
-  g.__arkPersistedLoaded.add(name);
-
-  const file = readEncryptedFile(encPath(name), legacyPath(name), EMPTY);
-  const map = storeMap(name);
-  const now = Date.now();
-  for (const [key, exp] of Object.entries(file.entries)) {
-    if (now <= exp) map.set(key, exp);
+function pruneEntries(
+  entries: Record<string, number>,
+  now: number,
+): Record<string, number> {
+  const pruned: Record<string, number> = {};
+  for (const [key, exp] of Object.entries(entries)) {
+    if (now <= exp) pruned[key] = exp;
   }
+  return pruned;
 }
 
-function persist(name: string): void {
-  const map = storeMap(name);
-  const entries: Record<string, number> = {};
-  for (const [key, exp] of map) entries[key] = exp;
-  writeEncryptedFile(encPath(name), { v: 1, entries });
-}
-
-function prune(name: string): void {
-  load(name);
-  const map = storeMap(name);
+function readStore(storeName: string): ExpiringFile {
   const now = Date.now();
-  let changed = false;
-  for (const [key, exp] of map) {
-    if (now > exp) {
-      map.delete(key);
-      changed = true;
-    }
-  }
-  if (changed) persist(name);
+  return mutateEncryptedFile(
+    encPath(storeName),
+    legacyPath(storeName),
+    EMPTY,
+    (f) => {
+      const entries = pruneEntries(f.entries, now);
+      if (Object.keys(entries).length === Object.keys(f.entries).length) {
+        return f;
+      }
+      return { v: 1 as const, entries };
+    },
+  );
 }
 
 /** Set expiring key; returns false if key still active (duplicate). */
@@ -77,31 +50,55 @@ export function claimExpiringKey(
   key: string,
   ttlMs: number,
 ): boolean {
-  prune(storeName);
-  const map = storeMap(storeName);
+  let claimed = false;
   const now = Date.now();
-  const existing = map.get(key);
-  if (existing != null && now <= existing) return false;
-  map.set(key, now + ttlMs);
-  persist(storeName);
-  return true;
+  mutateEncryptedFile(
+    encPath(storeName),
+    legacyPath(storeName),
+    EMPTY,
+    (f) => {
+      const entries = pruneEntries(f.entries, now);
+      const existing = entries[key];
+      if (existing != null && now <= existing) {
+        return { v: 1 as const, entries };
+      }
+      entries[key] = now + ttlMs;
+      claimed = true;
+      return { v: 1 as const, entries };
+    },
+  );
+  return claimed;
 }
 
 export function hasExpiringKey(storeName: string, key: string): boolean {
-  prune(storeName);
-  const exp = storeMap(storeName).get(key);
-  return exp != null && Date.now() <= exp;
+  const now = Date.now();
+  const file = readStore(storeName);
+  const exp = file.entries[key];
+  return exp != null && now <= exp;
 }
 
 export function deleteExpiringKey(storeName: string, key: string): void {
-  load(storeName);
-  const map = storeMap(storeName);
-  if (map.delete(key)) persist(storeName);
+  const now = Date.now();
+  mutateEncryptedFile(
+    encPath(storeName),
+    legacyPath(storeName),
+    EMPTY,
+    (f) => {
+      const entries = pruneEntries(f.entries, now);
+      if (!(key in entries)) return f;
+      delete entries[key];
+      return { v: 1 as const, entries };
+    },
+  );
 }
 
 export function clearExpiringStore(storeName: string): void {
-  storeMap(storeName).clear();
-  persist(storeName);
+  mutateEncryptedFile(
+    encPath(storeName),
+    legacyPath(storeName),
+    EMPTY,
+    () => ({ v: 1, entries: {} }),
+  );
 }
 
 const SCOPED_STORE_NAMES = [
@@ -111,5 +108,5 @@ const SCOPED_STORE_NAMES = [
 ] as const;
 
 export function pruneAllScopedExpiringStores(): void {
-  for (const name of SCOPED_STORE_NAMES) prune(name);
+  for (const name of SCOPED_STORE_NAMES) readStore(name);
 }
