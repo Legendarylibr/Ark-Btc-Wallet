@@ -77,6 +77,26 @@ export function hasExpiringKey(storeName: string, key: string): boolean {
   return exp != null && now <= exp;
 }
 
+export function consumeExpiringKey(storeName: string, key: string): boolean {
+  let consumed = false;
+  const now = Date.now();
+  mutateEncryptedFile(
+    encPath(storeName),
+    legacyPath(storeName),
+    EMPTY,
+    (f) => {
+      const entries = pruneEntries(f.entries, now);
+      if (!(key in entries)) {
+        return { v: 1 as const, entries };
+      }
+      delete entries[key];
+      consumed = true;
+      return { v: 1 as const, entries };
+    },
+  );
+  return consumed;
+}
+
 export function deleteExpiringKey(storeName: string, key: string): void {
   const now = Date.now();
   mutateEncryptedFile(
@@ -97,7 +117,7 @@ export function clearExpiringStore(storeName: string): void {
     encPath(storeName),
     legacyPath(storeName),
     EMPTY,
-    () => ({ v: 1, entries: {} }),
+    () => ({ v: 1 as const, entries: {} }),
   );
 }
 

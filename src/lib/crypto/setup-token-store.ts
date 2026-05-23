@@ -78,3 +78,51 @@ export function deleteSetupToken(id: string): boolean {
   });
   return deleted;
 }
+
+/** Atomically validate fingerprint and delete (single-use). */
+export function atomicConsumeSetupToken(
+  id: string,
+  fingerprint: string,
+): StoredSetupToken | null {
+  let result: StoredSetupToken | null = null;
+  const now = Date.now();
+  mutateEncryptedFile(encPath(), legacyPath(), EMPTY, (f) => {
+    const tokens = pruneTokens(f.tokens, now);
+    const entry = tokens[id];
+    if (!entry || entry.fingerprint !== fingerprint) {
+      return { v: 1 as const, tokens };
+    }
+    delete tokens[id];
+    result = entry;
+    return { v: 1 as const, tokens };
+  });
+  return result;
+}
+
+/** Atomically claim register-options slot (cooldown enforced under file lock). */
+export function atomicClaimSetupTokenForOptions(
+  id: string,
+  fingerprint: string,
+  cooldownMs: number,
+): StoredSetupToken | null {
+  let result: StoredSetupToken | null = null;
+  const now = Date.now();
+  mutateEncryptedFile(encPath(), legacyPath(), EMPTY, (f) => {
+    const tokens = pruneTokens(f.tokens, now);
+    const entry = tokens[id];
+    if (!entry || entry.fingerprint !== fingerprint) {
+      return { v: 1 as const, tokens };
+    }
+    if (
+      entry.optionsIssuedAt != null &&
+      now - entry.optionsIssuedAt < cooldownMs
+    ) {
+      return { v: 1 as const, tokens };
+    }
+    const updated = { ...entry, optionsIssuedAt: now };
+    tokens[id] = updated;
+    result = updated;
+    return { v: 1 as const, tokens };
+  });
+  return result;
+}

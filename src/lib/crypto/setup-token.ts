@@ -1,5 +1,6 @@
 import {
-  deleteSetupToken,
+  atomicClaimSetupTokenForOptions,
+  atomicConsumeSetupToken,
   getSetupToken,
   putSetupToken,
 } from "./setup-token-store";
@@ -36,16 +37,12 @@ export function claimSetupTokenForOptions(
   fingerprint: string,
 ): { publicKeyB64: string } | null {
   if (!token) return null;
-  const entry = getSetupToken(token);
-  if (!entry || entry.fingerprint !== fingerprint) return null;
-  const now = Date.now();
-  if (
-    entry.optionsIssuedAt != null &&
-    now - entry.optionsIssuedAt < OPTIONS_COOLDOWN_MS
-  ) {
-    return null;
-  }
-  putSetupToken(token, { ...entry, optionsIssuedAt: now });
+  const entry = atomicClaimSetupTokenForOptions(
+    token,
+    fingerprint,
+    OPTIONS_COOLDOWN_MS,
+  );
+  if (!entry) return null;
   return { publicKeyB64: entry.publicKeyB64 };
 }
 
@@ -53,8 +50,8 @@ export function consumeSetupToken(
   token: string | null | undefined,
   fingerprint: string,
 ): { publicKeyB64: string } | null {
-  const valid = validateSetupToken(token, fingerprint);
-  if (!valid) return null;
-  deleteSetupToken(token!);
-  return valid;
+  if (!token) return null;
+  const entry = atomicConsumeSetupToken(token, fingerprint);
+  if (!entry) return null;
+  return { publicKeyB64: entry.publicKeyB64 };
 }
