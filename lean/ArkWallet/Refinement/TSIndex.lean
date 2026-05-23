@@ -63,6 +63,17 @@ def webauthnMap : List MapEntry := [
   ⟨"src/lib/webauthn/client.ts", "ArkWallet.Refinement.Obligations", tierClient⟩,
 ]
 
+def browserSecurityMap : List MapEntry := [
+  ⟨"src/lib/security/csp.ts", "ArkWallet.Security.Csp", tierGuard⟩,
+  ⟨"src/lib/security/csp-hardening.ts", "ArkWallet.Security.Csp", tierCore⟩,
+  ⟨"src/lib/security/trusted-script-url.ts", "ArkWallet.Security.TrustedScriptUrl", tierCore⟩,
+  ⟨"src/lib/security/trusted-types.ts", "ArkWallet.Security.TrustedScriptUrl", tierClient⟩,
+  ⟨"src/lib/security/browser-threat-model.ts", "ArkWallet.Security.ThreatGuard", tierCore⟩,
+  ⟨"src/lib/security/browser-threat-guard.ts", "ArkWallet.Security.ThreatGuard", tierClient⟩,
+  ⟨"src/lib/security/execution-context.ts", "ArkWallet.Security.ExecutionContext", tierCore⟩,
+  ⟨"src/components/SecuritySentinel.tsx", "ArkWallet.Security.ThreatGuard", tierClient⟩,
+]
+
 def inboundMap : List MapEntry := [
   ⟨"src/lib/inbound-security.ts", "ArkWallet.Inbound.ApiGate", tierCore⟩,
   ⟨"src/lib/security/loopback.ts", "ArkWallet.Inbound.Loopback", tierCore⟩,
@@ -121,7 +132,7 @@ def clientMap : List MapEntry := [
 ]
 
 def completeMap : List MapEntry :=
-  cryptoMap ++ sessionMap ++ webauthnMap ++ inboundMap ++ routeMap ++ sdkMap ++ clientMap
+  cryptoMap ++ sessionMap ++ webauthnMap ++ browserSecurityMap ++ inboundMap ++ routeMap ++ sdkMap ++ clientMap
 
 def routeEntries : List MapEntry :=
   completeMap.filter fun e => e.tier == tierRoute

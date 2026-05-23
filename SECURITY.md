@@ -51,7 +51,9 @@ Passkey (PRF) mode requires a **recovery passphrase** at create. Pay / Secure / 
 - `POST /api/auth/barkd-ready` requires **unlock-check token** + pre-session Ed25519; before pairing returns **daemon reachability only** (no `walletStatus`); after pubkey pin requires **matching signing key** + wallet file check; public `GET /api/wallet/ready` is deprecated (410)
 - WebAuthn **register-options** / **setup-proof** use uniform 401 errors until vault proof is valid (no `walletExists` oracle on register-options)
 - **auth-options** resolves pending `opId` before barkd; uniform **401** for missing op / barkd / credential (no 503 fingerprint probe)
-- Page **CSP uses per-request nonces** (no `script-src 'unsafe-inline'`)
+- Page **CSP uses per-request nonces** (no `script-src 'unsafe-inline'`), **`script-src-attr 'none'`**, **`require-trusted-types-for 'script'`**, and a browser **Trusted Types** policy that blocks `innerHTML` / dynamic script injection
+- **`SecuritySentinel`** locks the wallet on tab blur, tab hide, and `pagehide`; rejects iframe embedding; refreshes idle timers on user input
+- Signed API calls and SDK WASM payments require a **top-level, non-embedded** browsing context
 - Barkd hardware registration flag stored in IndexedDB (avoids routine unauthenticated status probes)
 - Server session **8h max** + **30 min idle** (re-unlock required)
 - API body cap **64 KiB**; `TRACE`/`TRACK` blocked

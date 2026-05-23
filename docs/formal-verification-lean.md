@@ -268,7 +268,19 @@ stateDiagram-v2
 |----|-----------|
 | P3-1 | Valid client can complete unlock if oracles OK (sketched, not critical) |
 
+### BR — Browser XSS / malware (client refinement)
+
+| ID | Statement |
+|----|-----------|
+| BR-1 | Built-in page/API CSP includes hardening markers; primary `script-src` has no `unsafe-inline` |
+| BR-2 | Threat guard locks on blur/hide/embed/insecure context (`ThreatGuard`) |
+| BR-3 | Signing permitted iff not embedded (`ExecutionContext`) |
+| BR-4 | Trusted Types script URLs same-origin only (`TrustedScriptUrl`) |
+
+Fixtures: `npm run fv:extract` → `ArkWallet.Tests.BrowserSecurity`.
+
 ---
+
 
 ## 6. Axioms (trust boundaries)
 

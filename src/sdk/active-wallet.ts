@@ -1,5 +1,6 @@
 "use client";
 
+import { assertSecureBrowserContext } from "@/lib/security/execution-context";
 import type { SdkWalletHandle } from "@/sdk/bark/types";
 
 /** WASM handle kept outside Zustand to reduce devtools / snapshot exposure. */
@@ -18,6 +19,7 @@ export function setActiveSdkWallet(wallet: SdkWalletHandle | null): void {
 
 /** Only the SDK store module should call into the active WASM handle. */
 export function requireActiveSdkWallet(): SdkWalletHandle {
+  assertSecureBrowserContext();
   if (!active) throw new Error("Wallet locked");
   return active;
 }

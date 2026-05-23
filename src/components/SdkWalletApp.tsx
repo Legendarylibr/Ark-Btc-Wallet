@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useSdkWallet } from "@/hooks/useSdkWallet";
 import { Button } from "@/components/ui/Button";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
@@ -15,7 +15,6 @@ import { SdkTrustNotice } from "@/components/SdkTrustNotice";
 import { SdkUpgradeBanner } from "@/components/SdkUpgradeBanner";
 import { MnemonicBackupBanner } from "@/components/MnemonicBackupBanner";
 import { SDK_MODE_LABEL } from "@/sdk/trust-model";
-import { registerSdkAutoLock } from "@/sdk/session-lock";
 import { Fingerprint, LogOut, RefreshCw, Shield } from "lucide-react";
 import type { Balance } from "@/lib/barkd";
 
@@ -49,12 +48,6 @@ export function SdkWalletApp() {
   const [usePassphraseCreate, setUsePassphraseCreate] = useState(false);
   const [dismissUpgrade, setDismissUpgrade] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
-
-  const { lock } = store;
-
-  useEffect(() => {
-    registerSdkAutoLock(() => lock());
-  }, [lock]);
 
   if (!store.ready) {
     return (
