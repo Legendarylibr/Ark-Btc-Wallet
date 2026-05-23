@@ -12,6 +12,7 @@ import { consumeWebAuthnChallenge as consumeChallenge } from "./challenges";
 import {
   getWebAuthnCredential,
   saveWebAuthnCredential,
+  syncWebAuthnCredentialFromDisk,
   updateWebAuthnCounter,
   type StoredWebAuthnCredential,
 } from "./store";
@@ -86,7 +87,9 @@ export async function verifyHardwareAuthentication(
   response: AuthenticationResponseJSON,
   opId: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const stored = getWebAuthnCredential(fingerprint);
+  const stored =
+    syncWebAuthnCredentialFromDisk(fingerprint) ??
+    getWebAuthnCredential(fingerprint);
   if (!stored) {
     return { ok: false, error: "No hardware key registered for this wallet" };
   }

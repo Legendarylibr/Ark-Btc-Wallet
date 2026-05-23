@@ -20,7 +20,7 @@ import {
 import { encryptSecret } from "@/lib/crypto/vault";
 import { zeroize } from "@/lib/crypto/vault";
 import { getSdkWebAuthnConfig } from "./config";
-import { consumeSdkChallenge, storeSdkChallenge, challengeBytesToB64Url } from "./challenges";
+import { consumeSdkChallenge, storeSdkChallenge, challengeBytesToB64Url, sdkPasskeyOpChallenge } from "./challenges";
 import {
   base64urlToBuffer,
   bufferToBase64url,
@@ -100,30 +100,20 @@ async function evaluatePrfWithCredential(
   return prf;
 }
 
-/** PRF + decrypt vault — proves passkey matches stored wallet (no mnemonic returned). */
-async function verifyPasskeyPrfForRecord(
-  record: SdkPasskeyWalletRecord,
-): Promise<void> {
-  const { rpID } = getSdkWebAuthnConfig();
-  const prfSalt = base64ToBytes(record.prfSalt);
-  const prfOutput = await evaluatePrfWithCredential(
-    record.credentialId,
-    prfSalt,
-  );
-  const aesKey = await deriveAesKeyFromPrf(prfOutput, rpID);
-  await verifyPasskeyVaultDecrypt(record.vault, aesKey);
-}
-
-/** Op-scoped passkey tap: challenge bound to pending op before PRF derivation. */
+/** Op-scoped passkey tap: challenge bound to opId + bodyHash before PRF derivation. */
 async function verifyPasskeyPrfForOp(
   record: SdkPasskeyWalletRecord,
   opId: string,
+  bodyHash: string,
 ): Promise<void> {
   const { rpID } = getSdkWebAuthnConfig();
   const prfSalt = base64ToBytes(record.prfSalt);
-  const challenge = crypto.getRandomValues(new Uint8Array(32));
+  const challenge = new Uint8Array(
+    sdkPasskeyOpChallenge(record.walletId, opId, bodyHash),
+  );
   const challengeB64 = challengeBytesToB64Url(challenge);
-  storeSdkChallenge(`passkey-op:${record.walletId}:${opId}`, challenge);
+  const scope = `passkey-op:${record.walletId}:${opId}:${bodyHash}`;
+  storeSdkChallenge(scope, challenge);
 
   const assertion = (await navigator.credentials.get({
     publicKey: {
@@ -140,9 +130,7 @@ async function verifyPasskeyPrfForOp(
 
   if (!assertion) throw new Error("Passkey authentication cancelled");
 
-  if (
-    !consumeSdkChallenge(`passkey-op:${record.walletId}:${opId}`, challengeB64)
-  ) {
+  if (!consumeSdkChallenge(scope, challengeB64)) {
     throw new Error("Operation expired — try again");
   }
 
@@ -251,7 +239,7 @@ export async function confirmPasskeySensitiveOp(
   if (!record) throw new Error("No passkey wallet");
 
   const opId = createSdkPendingOp(record.walletId, type, bodyHash);
-  await verifyPasskeyPrfForOp(record, opId);
+  await verifyPasskeyPrfForOp(record, opId, bodyHash);
 
   if (!consumeSdkPendingOp(opId, record.walletId, type, bodyHash)) {
     throw new Error("Operation expired — try again");

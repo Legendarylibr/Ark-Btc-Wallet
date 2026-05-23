@@ -1,10 +1,7 @@
 import path from "path";
 import { getWalletDataDir } from "@/lib/data-dir";
 import { retentionNonceTtlMs } from "@/lib/security/retention-policy";
-import {
-  readEncryptedFile,
-  writeEncryptedFile,
-} from "@/lib/encrypted-file";
+import { mutateEncryptedFile } from "@/lib/encrypted-file";
 
 type NonceGlobal = typeof globalThis & {
   __arkScopedNonces?: Map<string, number>;
@@ -32,42 +29,48 @@ function legacyPath(): string {
   return path.join(getWalletDataDir(), "nonces.json");
 }
 
-function loadFile(): NonceFile {
-  return readEncryptedFile(encPath(), legacyPath(), EMPTY_FILE);
-}
-
-function persistMap(map: Map<string, number>): void {
-  const entries: Record<string, number> = {};
-  for (const [key, exp] of map) entries[key] = exp;
-  writeEncryptedFile(encPath(), { v: 1, entries });
+function syncCacheFromFile(file: NonceFile): void {
+  if (!g.__arkScopedNonces) g.__arkScopedNonces = new Map();
+  g.__arkScopedNonces.clear();
+  const now = Date.now();
+  for (const [key, exp] of Object.entries(file.entries)) {
+    if (now <= exp) g.__arkScopedNonces.set(key, exp);
+  }
+  g.__arkNonceStoreLoaded = true;
 }
 
 function getMap(): Map<string, number> {
-  if (!g.__arkScopedNonces) {
-    g.__arkScopedNonces = new Map();
-  }
+  if (!g.__arkScopedNonces) g.__arkScopedNonces = new Map();
   if (!g.__arkNonceStoreLoaded) {
-    g.__arkNonceStoreLoaded = true;
-    const file = loadFile();
-    const now = Date.now();
-    for (const [key, exp] of Object.entries(file.entries)) {
-      if (now <= exp) g.__arkScopedNonces.set(key, exp);
-    }
+    const file = mutateEncryptedFile(
+      encPath(),
+      legacyPath(),
+      EMPTY_FILE,
+      (f) => f,
+    );
+    syncCacheFromFile(file);
   }
   return g.__arkScopedNonces;
 }
 
-export function pruneNonceStore(): void {
-  const map = getMap();
+function pruneEntries(entries: NonceFile["entries"]): NonceFile["entries"] {
   const now = Date.now();
-  let changed = false;
-  for (const [key, exp] of map) {
-    if (now > exp) {
-      map.delete(key);
-      changed = true;
-    }
+  const pruned: NonceFile["entries"] = {};
+  for (const [key, exp] of Object.entries(entries)) {
+    if (now <= exp) pruned[key] = exp;
   }
-  if (changed) persistMap(map);
+  return pruned;
+}
+
+export function pruneNonceStore(): void {
+  const file = mutateEncryptedFile(encPath(), legacyPath(), EMPTY_FILE, (f) => {
+    const entries = pruneEntries(f.entries);
+    if (Object.keys(entries).length === Object.keys(f.entries).length) {
+      return f;
+    }
+    return { v: 1 as const, entries };
+  });
+  syncCacheFromFile(file);
 }
 
 function scopedKey(scope: string, nonce: string): string {
@@ -79,13 +82,21 @@ function scopedKey(scope: string, nonce: string): string {
  * Persists to disk so replay cannot succeed across server restarts.
  */
 export function claimNonce(scope: string, nonce: string): boolean {
-  pruneNonceStore();
-  const map = getMap();
   const key = scopedKey(scope, nonce);
-  if (map.has(key)) return false;
-  map.set(key, Date.now() + nonceTtlMs());
-  persistMap(map);
-  return true;
+  let claimed = false;
+
+  const file = mutateEncryptedFile(encPath(), legacyPath(), EMPTY_FILE, (f) => {
+    const entries = pruneEntries(f.entries);
+    if (entries[key] != null) {
+      return { v: 1 as const, entries };
+    }
+    entries[key] = Date.now() + nonceTtlMs();
+    claimed = true;
+    return { v: 1 as const, entries };
+  });
+
+  syncCacheFromFile(file);
+  return claimed;
 }
 
 /** @deprecated use claimNonce after verify only */

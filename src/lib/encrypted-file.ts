@@ -5,6 +5,7 @@ import {
   createDecipheriv,
   randomBytes,
 } from "node:crypto";
+import { withFileLockSync } from "./file-lock";
 import { getServerSecretKey } from "./server-secret";
 
 interface EncryptedEnvelope {
@@ -40,7 +41,7 @@ function decryptJson<T>(envelope: EncryptedEnvelope): T {
   return JSON.parse(plain.toString("utf8")) as T;
 }
 
-export function readEncryptedFile<T>(
+function readEncryptedFileUnlocked<T>(
   encPath: string,
   legacyPath: string,
   empty: T,
@@ -59,7 +60,7 @@ export function readEncryptedFile<T>(
     try {
       const raw = fs.readFileSync(legacyPath, "utf8");
       const data = JSON.parse(raw) as T;
-      writeEncryptedFile(encPath, data);
+      writeEncryptedFileUnlocked(encPath, data);
       fs.unlinkSync(legacyPath);
       return data;
     } catch {
@@ -70,8 +71,7 @@ export function readEncryptedFile<T>(
   return empty;
 }
 
-/** Atomic write: temp file + rename avoids torn ciphertext on crash or concurrent writers. */
-export function writeEncryptedFile<T>(encPath: string, data: T): void {
+function writeEncryptedFileUnlocked<T>(encPath: string, data: T): void {
   const envelope = encryptJson(data);
   const dir = path.dirname(encPath);
   fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
@@ -87,4 +87,36 @@ export function writeEncryptedFile<T>(encPath: string, data: T): void {
     }
     throw e;
   }
+}
+
+export function readEncryptedFile<T>(
+  encPath: string,
+  legacyPath: string,
+  empty: T,
+): T {
+  return withFileLockSync(encPath, () =>
+    readEncryptedFileUnlocked(encPath, legacyPath, empty),
+  );
+}
+
+/** Atomic write: temp file + rename avoids torn ciphertext on crash. */
+export function writeEncryptedFile<T>(encPath: string, data: T): void {
+  withFileLockSync(encPath, () => {
+    writeEncryptedFileUnlocked(encPath, data);
+  });
+}
+
+/** Locked read-modify-write — prevents lost updates across concurrent workers. */
+export function mutateEncryptedFile<T>(
+  encPath: string,
+  legacyPath: string,
+  empty: T,
+  mutator: (current: T) => T,
+): T {
+  return withFileLockSync(encPath, () => {
+    const current = readEncryptedFileUnlocked(encPath, legacyPath, empty);
+    const next = mutator(current);
+    writeEncryptedFileUnlocked(encPath, next);
+    return next;
+  });
 }

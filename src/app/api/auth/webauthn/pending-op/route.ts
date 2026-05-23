@@ -74,29 +74,26 @@ export async function POST(req: NextRequest) {
   if (!body.ok) return body.response;
 
   const sid = req.cookies.get(SESSION_COOKIE)?.value;
-  if (sid) {
-    if (!getSession(sid)) {
-      return NextResponse.json(
-        { error: "Session expired — unlock wallet again" },
-        { status: 401 },
-      );
-    }
-    if (getSessionFingerprint(req)) {
-      return runCryptoGuard(req, body.text, async (request, bodyText) => {
-        const session = getSession(sid);
-        if (!session) {
-          return NextResponse.json(
-            { error: "Session expired — unlock wallet again" },
-            { status: 401 },
-          );
-        }
-        return postHandler(
-          request,
-          bodyText,
-          bytesToBase64(session.publicKey),
+  const session = sid ? getSession(sid) : null;
+
+  if (session?.barkFingerprint && getSessionFingerprint(req)) {
+    return runCryptoGuard(req, body.text, async (request, bodyText) => {
+      const live = getSession(sid!);
+      if (!live) {
+        return NextResponse.json(
+          { error: "Session expired — unlock wallet again" },
+          { status: 401 },
         );
-      });
-    }
+      }
+      return postHandler(
+        request,
+        bodyText,
+        bytesToBase64(live.publicKey),
+      );
+    });
+  }
+
+  if (sid && session && !session.barkFingerprint) {
     return NextResponse.json(
       { error: "Session invalid — unlock wallet again" },
       { status: 401 },
