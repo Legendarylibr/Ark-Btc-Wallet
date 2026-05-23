@@ -97,6 +97,34 @@ describe("verifySignedRequest", () => {
     if (res instanceof Response) expect(res.status).toBe(401);
   });
 
+  it("rejects body hash mismatch", async () => {
+    useTempWalletDataDir();
+    const { publicKey, privateKey } = await generateKeypair();
+    const publicKeyB64 = bytesToBase64(publicKey);
+    const session = createSession(publicKeyB64, null, clientBinding());
+    const headers = await buildSignedWalletHeaders({
+      method: "GET",
+      pathname: "/api/wallet/balance",
+      body: "",
+      privateKey,
+      publicKeyB64,
+      sessionId: session.id,
+    });
+    headers.set("x-wallet-body-hash", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=");
+
+    const req = new NextRequest("http://127.0.0.1:3000/api/wallet/balance", {
+      method: "GET",
+      headers,
+    });
+    const res = await verifySignedRequest(req, "");
+    expect(res).toBeInstanceOf(Response);
+    if (res instanceof Response) {
+      expect(res.status).toBe(401);
+      const body = await res.json();
+      expect(body.error).toMatch(/Body hash/i);
+    }
+  });
+
   it("rejects session binding mismatch", async () => {
     useTempWalletDataDir();
     const { publicKey, privateKey } = await generateKeypair();

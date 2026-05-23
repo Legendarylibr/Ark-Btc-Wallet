@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Sheet } from "@/components/ui/Sheet";
 import { Button } from "@/components/ui/Button";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { isArkAddress } from "@/lib/utils";
 import {
   walletApiJsonWithHardware,
@@ -241,7 +242,7 @@ export function SendSheet({
               className="mt-2 w-full h-12 px-4 rounded-xl bg-cash-gray-2 border border-white/5 text-white placeholder:text-cash-muted/50 focus:outline-none focus:ring-2 focus:ring-cash-green/50 font-mono text-sm"
             />
           </label>
-          {error && <p className="text-red-400 text-sm">{error}</p>}
+          <ErrorBanner message={error} />
           <div className="flex gap-3 pt-2">
             <Button variant="secondary" className="flex-1" onClick={() => setStep("amount")}>
               Back
@@ -302,7 +303,7 @@ export function SendSheet({
           {estimate?.note && (
             <p className="text-cash-muted text-xs text-center">{estimate.note}</p>
           )}
-          {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+          <ErrorBanner message={error} className="text-center" />
           <p className="text-cash-muted text-xs text-center leading-relaxed px-2">
             You will confirm on your security key or passkey:{" "}
             <span className="text-white font-medium tabular-nums">

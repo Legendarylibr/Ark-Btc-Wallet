@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { useCryptoStore } from "@/store/crypto";
 import { Fingerprint, KeyRound } from "lucide-react";
 
@@ -48,7 +49,7 @@ export function UnlockGate() {
           <Fingerprint size={14} className="text-cash-green" />
           You will be prompted for hardware after tapping Unlock
         </p>
-        {error && <p className="text-red-400 text-sm">{error}</p>}
+        <ErrorBanner message={error} />
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "Confirm on your device…" : "Unlock"}
         </Button>

@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSdkWalletStore } from "@/store/sdk-wallet";
+import { useSdkWallet } from "@/hooks/useSdkWallet";
 import { Button } from "@/components/ui/Button";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { validatePassphrase } from "@/lib/passphrase";
 import { BARK_WASM_BUILD_HINT } from "@/sdk/bark/load";
 import { BalanceHero } from "@/components/BalanceHero";
@@ -11,6 +12,7 @@ import { SendSheet } from "@/components/SendSheet";
 import { ReceiveSheet } from "@/components/ReceiveSheet";
 import { SdkRegisterHardware } from "@/components/SdkRegisterHardware";
 import { SdkTrustNotice } from "@/components/SdkTrustNotice";
+import { SdkUpgradeBanner } from "@/components/SdkUpgradeBanner";
 import { MnemonicBackupBanner } from "@/components/MnemonicBackupBanner";
 import { SDK_MODE_LABEL } from "@/sdk/trust-model";
 import { registerSdkAutoLock } from "@/sdk/session-lock";
@@ -33,9 +35,12 @@ function toDisplayBalance(b: {
   };
 }
 
+function formError(err: unknown, fallback: string): string {
+  return err instanceof Error ? err.message : fallback;
+}
+
 export function SdkWalletApp() {
-  const store = useSdkWalletStore();
-  const init = useSdkWalletStore((s) => s.init);
+  const store = useSdkWallet();
   const [sheet, setSheet] = useState<"send" | "receive" | null>(null);
   const [passphrase, setPassphrase] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -43,14 +48,9 @@ export function SdkWalletApp() {
   const [showRecoveryUnlock, setShowRecoveryUnlock] = useState(false);
   const [usePassphraseCreate, setUsePassphraseCreate] = useState(false);
   const [dismissUpgrade, setDismissUpgrade] = useState(false);
-  const [upgradePassphrase, setUpgradePassphrase] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
 
-  const lock = useSdkWalletStore((s) => s.lock);
-
-  useEffect(() => {
-    void init();
-  }, [init]);
+  const { lock } = store;
 
   useEffect(() => {
     registerSdkAutoLock(() => lock());
@@ -81,7 +81,7 @@ export function SdkWalletApp() {
             onSubmit={async (e) => {
               e.preventDefault();
               setLocalError(null);
-                const v = validatePassphrase(recoveryPassphrase);
+              const v = validatePassphrase(recoveryPassphrase);
               if (v) {
                 setLocalError(v);
                 return;
@@ -90,9 +90,7 @@ export function SdkWalletApp() {
                 await store.createWalletWithPasskey(recoveryPassphrase);
                 setRecoveryPassphrase("");
               } catch (err) {
-                setLocalError(
-                  err instanceof Error ? err.message : BARK_WASM_BUILD_HINT,
-                );
+                setLocalError(formError(err, BARK_WASM_BUILD_HINT));
               }
             }}
           >
@@ -109,9 +107,7 @@ export function SdkWalletApp() {
                 className="mt-2 w-full h-12 px-4 rounded-xl bg-cash-gray-2 border border-white/5 text-white"
               />
             </label>
-            {(localError || store.error) && (
-              <p className="text-red-400 text-sm">{localError ?? store.error}</p>
-            )}
+            <ErrorBanner message={localError ?? store.error} />
             <Button type="submit" className="w-full" disabled={store.loading}>
               {store.loading ? "Creating passkey…" : "Create wallet with passkey"}
             </Button>
@@ -143,9 +139,7 @@ export function SdkWalletApp() {
                 setPassphrase("");
                 setConfirm("");
               } catch (err) {
-                setLocalError(
-                  err instanceof Error ? err.message : BARK_WASM_BUILD_HINT,
-                );
+                setLocalError(formError(err, BARK_WASM_BUILD_HINT));
               }
             }}
           >
@@ -167,9 +161,7 @@ export function SdkWalletApp() {
                 className="mt-2 w-full h-12 px-4 rounded-xl bg-cash-gray-2 border border-white/5 text-white"
               />
             </label>
-            {(localError || store.error) && (
-              <p className="text-red-400 text-sm">{localError ?? store.error}</p>
-            )}
+            <ErrorBanner message={localError ?? store.error} />
             <Button type="submit" className="w-full" disabled={store.loading}>
               {store.loading ? "Creating…" : "Create wallet"}
             </Button>
@@ -204,9 +196,7 @@ export function SdkWalletApp() {
                 try {
                   await store.unlockWithPasskey();
                 } catch (err) {
-                  setLocalError(
-                    err instanceof Error ? err.message : "Unlock failed",
-                  );
+                  setLocalError(formError(err, "Unlock failed"));
                 }
               }}
             >
@@ -222,6 +212,7 @@ export function SdkWalletApp() {
                 Use recovery passphrase
               </button>
             )}
+            <ErrorBanner message={localError ?? store.error} />
           </div>
         ) : (
           <form
@@ -237,7 +228,7 @@ export function SdkWalletApp() {
                 }
                 setPassphrase("");
               } catch (err) {
-                setLocalError(err instanceof Error ? err.message : "Unlock failed");
+                setLocalError(formError(err, "Unlock failed"));
               }
             }}
           >
@@ -250,9 +241,7 @@ export function SdkWalletApp() {
               }
               className="w-full h-12 px-4 rounded-xl bg-cash-gray-2 border border-white/5 text-white"
             />
-            {(localError || store.error) && (
-              <p className="text-red-400 text-sm">{localError ?? store.error}</p>
-            )}
+            <ErrorBanner message={localError ?? store.error} />
             <Button type="submit" className="w-full" disabled={store.loading}>
               {store.loading ? "Opening…" : "Unlock"}
             </Button>
@@ -288,46 +277,12 @@ export function SdkWalletApp() {
       {store.unlockMode === "passphrase" &&
         store.prfAvailable &&
         !dismissUpgrade && (
-          <div className="mx-5 mt-3 p-4 rounded-xl bg-cash-green/10 border border-cash-green/30">
-            <p className="text-sm text-white font-semibold mb-1">
-              Upgrade to passkey unlock
-            </p>
-            <p className="text-cash-muted text-xs mb-3">
-              PRF lets your passkey derive the wallet key. Your passphrase stays
-              as recovery backup.
-            </p>
-            <input
-              type="password"
-              value={upgradePassphrase}
-              onChange={(e) => setUpgradePassphrase(e.target.value)}
-              placeholder="Current passphrase"
-              className="w-full h-10 px-3 rounded-lg bg-cash-gray-2 border border-white/5 text-white text-sm mb-2"
-            />
-            <div className="flex gap-2">
-              <Button
-                className="flex-1 text-sm"
-                disabled={store.loading || !upgradePassphrase}
-                onClick={async () => {
-                  try {
-                    await store.upgradeToPasskey(upgradePassphrase);
-                    setUpgradePassphrase("");
-                    setDismissUpgrade(true);
-                  } catch {
-                    /* store.error */
-                  }
-                }}
-              >
-                {store.loading ? "…" : "Upgrade"}
-              </Button>
-              <Button
-                variant="secondary"
-                className="text-sm"
-                onClick={() => setDismissUpgrade(true)}
-              >
-                Later
-              </Button>
-            </div>
-          </div>
+          <SdkUpgradeBanner
+            loading={store.loading}
+            storeError={store.error}
+            onUpgrade={(p) => store.upgradeToPasskey(p)}
+            onDismiss={() => setDismissUpgrade(true)}
+          />
         )}
 
       <header className="flex items-center justify-between px-5 pt-4">
@@ -369,9 +324,7 @@ export function SdkWalletApp() {
         </div>
       </header>
 
-      {store.error && (
-        <p className="mx-5 mt-2 text-red-400 text-xs text-center">{store.error}</p>
-      )}
+      <ErrorBanner message={store.error} variant="banner" />
 
       <BalanceHero balance={balance} connected />
       <ActionButtons
@@ -386,12 +339,8 @@ export function SdkWalletApp() {
         onClose={() => setSheet(null)}
         maxSats={balance?.spendable_sat ?? 0}
         onSuccess={() => void store.sync()}
-        sdkEstimate={async (destination, amountSat) =>
-          store.estimateSend(destination, amountSat)
-        }
-        sdkSend={async (destination, amountSat) => {
-          await store.send(destination, amountSat);
-        }}
+        sdkEstimate={store.estimateSend}
+        sdkSend={store.send}
       />
       <ReceiveSheet
         open={sheet === "receive"}

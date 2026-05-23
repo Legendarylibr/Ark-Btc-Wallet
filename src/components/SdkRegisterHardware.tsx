@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { useSdkWalletStore } from "@/store/sdk-wallet";
 import { SdkTrustNotice } from "@/components/SdkTrustNotice";
 import { Fingerprint, Usb } from "lucide-react";
@@ -62,7 +63,7 @@ export function SdkRegisterHardware({ onComplete }: SdkRegisterHardwareProps) {
           Pay and Secure require device confirmation
         </li>
       </ul>
-      {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
+      <ErrorBanner message={error} className="mb-4" />
       <Button
         className="w-full"
         onClick={() => void handleRegister()}

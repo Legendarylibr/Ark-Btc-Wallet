@@ -18,7 +18,11 @@ import {
   unlockVault,
   zeroize,
 } from "@/lib/crypto/vault";
-import { constantTimeEqual } from "@/lib/crypto/secure-compare";
+import {
+  constantTimeBodyHashEqual,
+  constantTimeEqual,
+  constantTimeEqualString,
+} from "@/lib/crypto/secure-compare";
 import { isValidNonceUuid } from "@/lib/crypto/nonce-format";
 
 describe("canonical signing", () => {
@@ -92,6 +96,13 @@ describe("secure-compare", () => {
     expect(constantTimeEqual(a, new Uint8Array([1, 2, 3]))).toBe(true);
     expect(constantTimeEqual(a, new Uint8Array([1, 2, 4]))).toBe(false);
     expect(constantTimeEqual(a, new Uint8Array([1, 2]))).toBe(false);
+  });
+
+  it("compares body hashes in constant time", () => {
+    const h = hashBody('{"a":1}');
+    expect(constantTimeBodyHashEqual(h, h)).toBe(true);
+    expect(constantTimeBodyHashEqual(h, hashBody('{"a":2}'))).toBe(false);
+    expect(constantTimeEqualString(h, `${h}x`)).toBe(false);
   });
 });
 

@@ -62,7 +62,7 @@ interface SdkWalletState {
   upgradeToPasskey: (passphrase: string) => Promise<void>;
   registerHardware: (passphrase: string) => Promise<void>;
   lock: () => void;
-  sync: () => Promise<void>;
+  sync: (options?: { background?: boolean }) => Promise<void>;
   refreshAddress: () => Promise<void>;
   estimateSend: (destination: string, amountSat: number) => Promise<SdkSendEstimate>;
   send: (destination: string, amountSat: number) => Promise<void>;
@@ -292,18 +292,21 @@ export const useSdkWalletStore = create<SdkWalletState>((set, get) => ({
     });
   },
 
-  sync: async () => {
+  sync: async (options) => {
     const wallet = requireActiveSdkWallet();
-    set({ loading: true, error: null });
+    const background = options?.background === true;
+    if (!background) set({ loading: true, error: null });
     try {
       await wallet.sync();
       const balance = await wallet.balance();
-      set({ balance, loading: false });
+      set(background ? { balance } : { balance, loading: false });
     } catch (e) {
-      set({
-        loading: false,
-        error: e instanceof Error ? e.message : "Sync failed",
-      });
+      const message = e instanceof Error ? e.message : "Sync failed";
+      set(
+        background
+          ? { error: message }
+          : { loading: false, error: message },
+      );
     }
   },
 
