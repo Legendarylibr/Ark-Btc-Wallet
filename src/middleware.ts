@@ -32,16 +32,16 @@ function apiReject(response: NextResponse): NextResponse {
 
 function pageResponse(request: NextRequest): NextResponse {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+  const csp = buildPageContentSecurityPolicy(nonce);
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
+  // Next.js parses the nonce from the request CSP during SSR (must match response).
+  requestHeaders.set("Content-Security-Policy", csp);
 
   const response = NextResponse.next({
     request: { headers: requestHeaders },
   });
-  response.headers.set(
-    "Content-Security-Policy",
-    buildPageContentSecurityPolicy(nonce),
-  );
+  response.headers.set("Content-Security-Policy", csp);
   return response;
 }
 

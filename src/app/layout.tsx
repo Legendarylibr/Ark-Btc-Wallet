@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { connection } from "next/server";
 import { Geist } from "next/font/google";
 import { SecuritySentinel } from "@/components/SecuritySentinel";
 import "./globals.css";
@@ -28,11 +29,13 @@ export const viewport: Viewport = {
   themeColor: "#0a0a0a",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  await connection();
+
   return (
     <html lang="en" className={geist.variable}>
       <body className="antialiased min-h-dvh">
