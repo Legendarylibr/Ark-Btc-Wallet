@@ -7,10 +7,10 @@ import {
   sdkEstimateArkSendFee,
 } from "@/sdk/bark/fees";
 import {
-  challengeBytesToB64Url,
   consumeSdkChallenge,
   storeSdkChallenge,
 } from "@/sdk/webauthn/challenges";
+import { bytesToBase64url } from "@/sdk/webauthn/prf";
 import {
   consumeSdkPendingOp,
   createSdkPendingOp,
@@ -54,10 +54,18 @@ describe("sdk WebAuthn challenges", () => {
 
   it("round-trips challenge as base64url", () => {
     const bytes = new Uint8Array([1, 2, 3, 4, 5]);
-    const b64url = challengeBytesToB64Url(bytes);
+    const b64url = bytesToBase64url(bytes);
     storeSdkChallenge("scope-1", bytes);
     expect(consumeSdkChallenge("scope-1", b64url)).toBe(true);
     expect(consumeSdkChallenge("scope-1", b64url)).toBe(false);
+  });
+
+  it("honours expiry after session reload (expiry in sessionStorage)", () => {
+    const bytes = new Uint8Array([9, 8, 7]);
+    const b64url = bytesToBase64url(bytes);
+    storeSdkChallenge("scope-reload", bytes);
+    sessionStorage.setItem("sdk-wa-exp:scope-reload", String(Date.now() + 60_000));
+    expect(consumeSdkChallenge("scope-reload", b64url)).toBe(true);
   });
 });
 

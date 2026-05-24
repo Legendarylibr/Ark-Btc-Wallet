@@ -4,6 +4,7 @@ import { useEffect, useId, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { handleFocusTrap } from "@/lib/focus-trap";
 
 interface SheetProps {
   open: boolean;
@@ -26,6 +27,8 @@ export function Sheet({ open, onClose, title, children, className }: SheetProps)
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
+      const panel = panelRef.current;
+      if (panel) handleFocusTrap(panel, e);
     };
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";

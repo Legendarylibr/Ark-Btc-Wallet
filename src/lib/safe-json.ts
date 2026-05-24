@@ -1,3 +1,12 @@
+/** Parse JSON from a fetch Response; returns null when the body is not JSON. */
+export async function readResponseJson<T>(res: Response): Promise<T | null> {
+  try {
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
 export function safeParseJson<T>(
   text: string,
   fallback: T,

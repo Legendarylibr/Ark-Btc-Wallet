@@ -13,6 +13,7 @@ import {
   pendingOpTypeForPath,
   type PendingOpType,
 } from "@/lib/webauthn/pending-op-paths";
+import { readResponseJson } from "@/lib/safe-json";
 
 export class WalletApiError extends Error {
   constructor(
@@ -164,20 +165,29 @@ async function walletApiForPath(
   return walletApi(path, init);
 }
 
+async function parseWalletApiJson<T>(res: Response): Promise<T> {
+  const data = await readResponseJson<{ error?: string; code?: string } & T>(
+    res,
+  );
+  if (!res.ok) {
+    throw new WalletApiError(
+      data?.error ?? "Request failed",
+      res.status,
+      data?.code,
+    );
+  }
+  if (data == null) {
+    throw new WalletApiError("Invalid response from server", res.status);
+  }
+  return data as T;
+}
+
 export async function walletApiJson<T>(
   path: string,
   init: RequestInit = {},
 ): Promise<T> {
   const res = await walletApiForPath(path, init);
-  const data = await res.json();
-  if (!res.ok) {
-    throw new WalletApiError(
-      (data as { error?: string }).error ?? "Request failed",
-      res.status,
-      (data as { code?: string }).code,
-    );
-  }
-  return data as T;
+  return parseWalletApiJson<T>(res);
 }
 
 export async function walletApiJsonWithHardware<T>(
@@ -185,13 +195,5 @@ export async function walletApiJsonWithHardware<T>(
   init: RequestInit = {},
 ): Promise<T> {
   const res = await walletApiWithHardware(path, init);
-  const data = await res.json();
-  if (!res.ok) {
-    throw new WalletApiError(
-      (data as { error?: string }).error ?? "Request failed",
-      res.status,
-      (data as { code?: string }).code,
-    );
-  }
-  return data as T;
+  return parseWalletApiJson<T>(res);
 }

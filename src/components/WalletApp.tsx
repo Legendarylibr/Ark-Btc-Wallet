@@ -34,7 +34,6 @@ export function WalletApp() {
     loading,
     error,
     secureStatus,
-    cryptoReady,
     setSheet,
     fetchHealth,
     fetchAddress,
@@ -62,12 +61,6 @@ export function WalletApp() {
       await refreshAll();
     }
   }, [fetchHealth, refreshAll]);
-
-  useEffect(() => {
-    if (cryptoReady && onboarded) {
-      void refreshAll();
-    }
-  }, [cryptoReady, onboarded, refreshAll]);
 
   if (loading || !vaultReady) {
     return (

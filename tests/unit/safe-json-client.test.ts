@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseJsonBody, safeParseJson } from "@/lib/safe-json";
+import { parseJsonBody, readResponseJson, safeParseJson } from "@/lib/safe-json";
 import { hashClientBinding } from "@/lib/client-binding";
 import { ARK_CLIENT_HEADER, ARK_CLIENT_VALUE } from "@/lib/ark-client";
 
@@ -14,6 +14,22 @@ describe("safe-json", () => {
   it("safeParseJson returns fallback on error", () => {
     expect(safeParseJson("", { x: 1 })).toEqual({ x: 1 });
     expect(safeParseJson('{"ok":true}', { x: 0 })).toEqual({ ok: true });
+  });
+
+  it("readResponseJson returns null for non-JSON bodies", async () => {
+    const res = new Response("<html>error</html>", {
+      status: 502,
+      headers: { "content-type": "text/html" },
+    });
+    expect(await readResponseJson(res)).toBeNull();
+  });
+
+  it("readResponseJson parses JSON responses", async () => {
+    const res = new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+    expect(await readResponseJson<{ ok: boolean }>(res)).toEqual({ ok: true });
   });
 });
 

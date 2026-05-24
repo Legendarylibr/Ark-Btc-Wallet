@@ -20,22 +20,8 @@ import {
   type SdkPendingOpType,
 } from "./pending-op";
 import { getSdkWalletId } from "./wallet-id";
-
-function bufferToBase64url(buf: ArrayBuffer): string {
-  const bytes = new Uint8Array(buf);
-  let bin = "";
-  for (const b of bytes) bin += String.fromCharCode(b);
-  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-
-function base64urlToBuffer(b64url: string): ArrayBuffer {
-  const pad = b64url.length % 4 === 0 ? "" : "=".repeat(4 - (b64url.length % 4));
-  const b64 = b64url.replace(/-/g, "+").replace(/_/g, "/") + pad;
-  const bin = atob(b64);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return bytes.buffer;
-}
+import { assertWebAuthnAvailable } from "@/lib/webauthn/availability";
+import { base64urlToBuffer, bufferToBase64url } from "./prf";
 
 export async function sdkHardwareRegistered(): Promise<boolean> {
   const walletId = await getSdkWalletId();
@@ -45,13 +31,7 @@ export async function sdkHardwareRegistered(): Promise<boolean> {
 
 /** Passphrase proves vault ownership before enrolling Touch ID / YubiKey */
 export async function registerSdkHardware(passphrase: string): Promise<void> {
-  if (
-    typeof window === "undefined" ||
-    !window.PublicKeyCredential
-  ) {
-    throw new Error("WebAuthn is not available in this browser");
-  }
-
+  assertWebAuthnAvailable();
   await loadSdkMnemonic(passphrase);
 
   const walletId = await getSdkWalletId();
@@ -118,6 +98,7 @@ async function authenticateSdkHardware(
   walletId: string,
   opId: string,
 ): Promise<void> {
+  assertWebAuthnAvailable();
   const stored = await loadSdkHardwareCredential();
   if (!stored || stored.walletId !== walletId) {
     throw new Error("Register a hardware key first");

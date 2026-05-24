@@ -1,6 +1,7 @@
 "use client";
 
 import { base64ToBytes } from "@/lib/crypto/ed25519";
+import { base64urlToBuffer } from "./prf";
 
 function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
   const copy = new Uint8Array(bytes.byteLength);
@@ -9,12 +10,7 @@ function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
 }
 
 function base64UrlToBytes(b64url: string): Uint8Array {
-  const pad = b64url.length % 4 === 0 ? "" : "=".repeat(4 - (b64url.length % 4));
-  const b64 = b64url.replace(/-/g, "+").replace(/_/g, "/") + pad;
-  const bin = atob(b64);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return bytes;
+  return new Uint8Array(base64urlToBuffer(b64url));
 }
 
 async function sha256(data: BufferSource): Promise<Uint8Array> {

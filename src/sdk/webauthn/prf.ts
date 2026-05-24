@@ -1,7 +1,7 @@
 "use client";
 
-function bufferToBase64url(buf: ArrayBuffer): string {
-  const bytes = new Uint8Array(buf);
+function bufferToBase64url(buf: ArrayBuffer | Uint8Array): string {
+  const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
   let bin = "";
   for (const b of bytes) bin += String.fromCharCode(b);
   return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
@@ -76,10 +76,8 @@ export function prfEvalOnCreateExtension(
   } as AuthenticationExtensionsClientInputs;
 }
 
-export function prfEnabledOnCreate(credential: PublicKeyCredential): boolean {
-  const prf = credential.getClientExtensionResults()
-    ?.prf as PrfExtensionResults | undefined;
-  return prf?.enabled === true;
+export function bytesToBase64url(bytes: Uint8Array): string {
+  return bufferToBase64url(bytes);
 }
 
 export { bufferToBase64url, base64urlToBuffer };

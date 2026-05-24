@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useCallback } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { useWalletStore } from "@/store/wallet";
 import { useCryptoStore } from "@/store/crypto";
 
@@ -8,8 +9,34 @@ const SYNC_INTERVAL_MS = 15_000;
 const HEALTH_POLL_MS = 5_000;
 
 export function useWallet() {
-  const store = useWalletStore();
-  const onboarded = store.onboarded;
+  const {
+    onboarded,
+    connected,
+    balance,
+    history,
+    receiveAddress,
+    sheet,
+    loading,
+    error,
+    secureStatus,
+    setSheet,
+    fetchHealth,
+  } = useWalletStore(
+    useShallow((s) => ({
+      onboarded: s.onboarded,
+      connected: s.connected,
+      balance: s.balance,
+      history: s.history,
+      receiveAddress: s.receiveAddress,
+      sheet: s.sheet,
+      loading: s.loading,
+      error: s.error,
+      secureStatus: s.secureStatus,
+      setSheet: s.setSheet,
+      fetchHealth: s.fetchHealth,
+    })),
+  );
+
   const cryptoReady = useCryptoStore(
     (s) => s.identity != null && s.sessionRegistered,
   );
@@ -37,20 +64,36 @@ export function useWallet() {
     return () => clearInterval(id);
   }, [onboarded, cryptoReady]);
 
-  const fetchAddress = useCallback(
+  const fetchAddressCb = useCallback(
     (rotate?: boolean) => useWalletStore.getState().fetchAddress(rotate),
     [],
   );
 
-  const refreshAll = useCallback(
+  const refreshAllCb = useCallback(
     () => useWalletStore.getState().refreshAll(),
     [],
   );
 
-  const secureFunds = useCallback(
+  const secureFundsCb = useCallback(
     () => useWalletStore.getState().secureFunds(),
     [],
   );
 
-  return { ...store, fetchAddress, refreshAll, secureFunds, cryptoReady };
+  return {
+    onboarded,
+    connected,
+    balance,
+    history,
+    receiveAddress,
+    sheet,
+    loading,
+    error,
+    secureStatus,
+    cryptoReady,
+    setSheet,
+    fetchHealth,
+    fetchAddress: fetchAddressCb,
+    refreshAll: refreshAllCb,
+    secureFunds: secureFundsCb,
+  };
 }
