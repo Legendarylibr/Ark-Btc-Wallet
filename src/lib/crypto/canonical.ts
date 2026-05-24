@@ -1,10 +1,22 @@
 import { sha256 } from "@noble/hashes/sha2.js";
-import { bytesToBase64 } from "./ed25519";
+import { base64ToBytes, bytesToBase64 } from "./ed25519";
 
 export const CANONICAL_VERSION = "v2";
 
 export function hashBody(body: string): string {
   return bytesToBase64(sha256(new TextEncoder().encode(body)));
+}
+
+/** Validates a `hashBody()` digest (32-byte SHA-256, standard base64). */
+export function isValidBodyHash(value: string): boolean {
+  if (typeof value !== "string" || value.length < 43 || value.length > 44) {
+    return false;
+  }
+  try {
+    return base64ToBytes(value).length === 32;
+  } catch {
+    return false;
+  }
 }
 
 /** Path + sorted query string (e.g. /api/wallet/address?rotate=1) */

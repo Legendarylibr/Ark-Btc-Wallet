@@ -64,7 +64,6 @@ const guarded = withSensitiveCryptoGuard(async (_req, bodyText) => {
       );
     }
 
-    await barkd.sync();
     const result = await barkd.sendArk(destination.trim(), amountSat);
     return NextResponse.json({
       ok: true,

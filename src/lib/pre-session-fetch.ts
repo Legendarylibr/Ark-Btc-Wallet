@@ -3,6 +3,7 @@
 import type { UnlockedIdentity } from "@/lib/crypto/vault";
 import { signedFetch } from "@/lib/signed-fetch";
 import type { PendingOpType } from "@/lib/webauthn/pending-op";
+import { readResponseJson } from "@/lib/safe-json";
 
 export async function preSessionSignedJson<T>(
   identity: UnlockedIdentity,
@@ -14,11 +15,12 @@ export async function preSessionSignedJson<T>(
     method: "POST",
     body: bodyText,
   });
-  const data = await res.json();
+  const data = await readResponseJson<{ error?: string } & T>(res);
   if (!res.ok) {
-    throw new Error(
-      (data as { error?: string }).error ?? "Pre-session request failed",
-    );
+    throw new Error(data?.error ?? "Pre-session request failed");
+  }
+  if (data == null) {
+    throw new Error("Invalid response from server");
   }
   return data as T;
 }

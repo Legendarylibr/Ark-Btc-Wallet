@@ -52,11 +52,6 @@ export function getPendingOpDetails(
   return op;
 }
 
-export function hasPendingOp(opId: string, fingerprint: string): boolean {
-  const op = getPendingOpDetails(opId);
-  return op != null && op.fingerprint === fingerprint;
-}
-
 export function matchesPendingOp(
   opId: string,
   fingerprint: string,

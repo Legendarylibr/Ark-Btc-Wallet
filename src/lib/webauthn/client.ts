@@ -21,6 +21,8 @@ import {
 } from "@/lib/webauthn/constants";
 import { unlockVault, loadVaultFromStorage, zeroize } from "@/lib/crypto/vault";
 import type { PendingOpType } from "@/lib/webauthn/pending-op-paths";
+import { readResponseJson } from "@/lib/safe-json";
+import { assertWebAuthnAvailable } from "@/lib/webauthn/availability";
 
 async function apiJson<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
@@ -31,11 +33,12 @@ async function apiJson<T>(url: string, init?: RequestInit): Promise<T> {
       ...init?.headers,
     },
   });
-  const data = await res.json();
+  const data = await readResponseJson<{ error?: string } & T>(res);
   if (!res.ok) {
-    throw new Error(
-      (data as { error?: string }).error ?? "Hardware request failed",
-    );
+    throw new Error(data?.error ?? "Hardware request failed");
+  }
+  if (data == null) {
+    throw new Error("Invalid response from server");
   }
   return data as T;
 }
@@ -69,6 +72,7 @@ async function obtainSetupToken(identity: UnlockedIdentity): Promise<string> {
 
 /** Register YubiKey / Touch ID — requires passphrase to prove vault ownership */
 export async function registerHardwareDevice(passphrase: string): Promise<void> {
+  assertWebAuthnAvailable();
   const vault = await loadVaultFromStorage();
   if (!vault) throw new Error("No vault — set up a passphrase first");
 
@@ -112,11 +116,11 @@ export async function createPendingOp(
     method: "POST",
     body: JSON.stringify({ type, bodyHash }),
   });
-  const data = (await res.json()) as { opId?: string; error?: string };
+  const data = await readResponseJson<{ opId?: string; error?: string }>(res);
   if (!res.ok) {
-    throw new Error(data.error ?? "Could not start secured operation");
+    throw new Error(data?.error ?? "Could not start secured operation");
   }
-  if (!data.opId) throw new Error("Missing operation id");
+  if (!data?.opId) throw new Error("Missing operation id");
   return data.opId;
 }
 
@@ -128,18 +132,21 @@ export async function authenticateWithHardware(
   challenge: string;
   opId: string;
 }> {
+  assertWebAuthnAvailable();
   const path = `/api/auth/webauthn/auth-options?opId=${encodeURIComponent(opId)}`;
   const res = await signedFetchFn(path, { method: "GET" });
-  const data = await res.json();
+  const data = await readResponseJson<{
+    options?: PublicKeyCredentialRequestOptionsJSON;
+    challenge?: string;
+    error?: string;
+  }>(res);
   if (!res.ok) {
-    throw new Error(
-      (data as { error?: string }).error ?? "Hardware request failed",
-    );
+    throw new Error(data?.error ?? "Hardware request failed");
   }
-  const { options, challenge } = data as {
-    options: PublicKeyCredentialRequestOptionsJSON;
-    challenge: string;
-  };
+  if (!data?.options || !data.challenge) {
+    throw new Error("Invalid response from server");
+  }
+  const { options, challenge } = data;
 
   const authResp = await startAuthentication({ optionsJSON: options });
   return { response: authResp, challenge, opId };

@@ -320,7 +320,9 @@ export function SendSheet({
             disabled={
               loading ||
               estimateLoading ||
-              (estimate != null && !estimate.affordable)
+              !estimate ||
+              !!error ||
+              !estimate.affordable
             }
             onClick={handleSend}
           >

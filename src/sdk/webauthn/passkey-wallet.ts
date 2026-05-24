@@ -20,9 +20,10 @@ import {
 import { encryptSecret } from "@/lib/crypto/vault";
 import { zeroize } from "@/lib/crypto/vault";
 import { getSdkWebAuthnConfig } from "./config";
-import { consumeSdkChallenge, storeSdkChallenge, challengeBytesToB64Url, sdkPasskeyOpChallenge } from "./challenges";
+import { consumeSdkChallenge, storeSdkChallenge, sdkPasskeyOpChallenge } from "./challenges";
 import {
   base64urlToBuffer,
+  bytesToBase64url,
   bufferToBase64url,
   extractPrfFirst,
   generatePrfSalt,
@@ -111,7 +112,7 @@ async function verifyPasskeyPrfForOp(
   const challenge = new Uint8Array(
     sdkPasskeyOpChallenge(record.walletId, opId, bodyHash),
   );
-  const challengeB64 = challengeBytesToB64Url(challenge);
+  const challengeB64 = bytesToBase64url(challenge);
   const scope = `passkey-op:${record.walletId}:${opId}:${bodyHash}`;
   storeSdkChallenge(scope, challenge);
 

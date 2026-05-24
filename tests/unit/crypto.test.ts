@@ -3,6 +3,7 @@ import {
   canonicalRequest,
   CANONICAL_VERSION,
   hashBody,
+  isValidBodyHash,
   signingPath,
 } from "@/lib/crypto/canonical";
 import {
@@ -42,6 +43,13 @@ describe("canonical signing", () => {
   it("hashes body deterministically", () => {
     expect(hashBody('{"a":1}')).toBe(hashBody('{"a":1}'));
     expect(hashBody('{"a":1}')).not.toBe(hashBody('{"a":2}'));
+  });
+
+  it("validates hashBody digests", () => {
+    const h = hashBody('{"a":1}');
+    expect(isValidBodyHash(h)).toBe(true);
+    expect(isValidBodyHash("not-a-digest")).toBe(false);
+    expect(isValidBodyHash("")).toBe(false);
   });
 
   it("builds v2 canonical message", () => {

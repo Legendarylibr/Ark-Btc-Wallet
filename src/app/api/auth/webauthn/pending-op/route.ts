@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runCryptoGuard } from "@/lib/api-guard";
+import { isValidBodyHash } from "@/lib/crypto/canonical";
 import { bytesToBase64 } from "@/lib/crypto/ed25519";
 import { verifyPreSessionRequest } from "@/lib/crypto/pre-session";
 import { assertApiSecurity } from "@/lib/inbound-security";
@@ -30,9 +31,16 @@ async function postHandler(
   }
 
   const { type, bodyHash } = parsed.data;
-  if (!type || !bodyHash || !VALID_TYPES.has(type as PendingOpType)) {
+  if (
+    !type ||
+    !bodyHash ||
+    !isValidBodyHash(bodyHash) ||
+    !VALID_TYPES.has(type as PendingOpType)
+  ) {
     return NextResponse.json({ error: "Invalid pending operation" }, { status: 400 });
   }
+
+  const pendingType = type as PendingOpType;
 
   let fingerprint: string;
   try {
@@ -53,7 +61,7 @@ async function postHandler(
 
   const opId = createPendingOp(
     fingerprint,
-    type as PendingOpType,
+    pendingType,
     bodyHash,
     creatorPublicKeyB64,
   );
