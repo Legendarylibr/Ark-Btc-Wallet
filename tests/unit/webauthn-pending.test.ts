@@ -7,6 +7,7 @@ import {
   pendingOpTypeForPath,
   VALID_PENDING_OP_TYPES,
 } from "@/lib/webauthn/pending-op";
+import { parsePendingOpType } from "@/lib/webauthn/pending-op-paths";
 import { HARDWARE_REQUIRED_PATHS } from "@/lib/webauthn/constants";
 import { cleanupTempWalletDataDirs, useTempWalletDataDir } from "../helpers/env";
 
@@ -30,6 +31,11 @@ describe("webauthn pending-op", () => {
     const id = createPendingOp("fp", "refresh", "h1", creatorPk);
     invalidatePendingOp(id);
     expect(matchesPendingOp(id, "fp", "refresh", "h1")).toBe(false);
+  });
+
+  it("parsePendingOpType accepts known types only", () => {
+    expect(parsePendingOpType("send")).toBe("send");
+    expect(parsePendingOpType("bogus")).toBeNull();
   });
 
   it("maps API paths to op types", () => {

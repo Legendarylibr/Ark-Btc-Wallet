@@ -4,11 +4,9 @@ import { useEffect, useState } from "react";
 import { Sheet } from "@/components/ui/Sheet";
 import { Button } from "@/components/ui/Button";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { isSendConfirmDisabled } from "@/lib/send-confirm";
 import { isArkAddress } from "@/lib/utils";
-import {
-  walletApiJsonWithHardware,
-  walletApiWithHardware,
-} from "@/lib/wallet-api";
+import { walletApiJsonWithHardware } from "@/lib/wallet-api";
 import { Check, Delete } from "lucide-react";
 
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "del"] as const;
@@ -142,15 +140,13 @@ export function SendSheet({
       if (sdkSend) {
         await sdkSend(address.trim(), amountSat);
       } else {
-        const res = await walletApiWithHardware("/api/wallet/send", {
+        await walletApiJsonWithHardware("/api/wallet/send", {
           method: "POST",
           body: JSON.stringify({
             destination: address.trim(),
             amount_sat: amountSat,
           }),
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error ?? "Payment failed");
       }
       setStep("done");
       onSuccess();
@@ -317,13 +313,12 @@ export function SendSheet({
           </p>
           <Button
             className="w-full"
-            disabled={
-              loading ||
-              estimateLoading ||
-              !estimate ||
-              !!error ||
-              !estimate.affordable
-            }
+            disabled={isSendConfirmDisabled({
+              loading,
+              estimateLoading,
+              estimate,
+              error,
+            })}
             onClick={handleSend}
           >
             {loading ? "Confirm on device…" : "Confirm & Pay"}

@@ -76,6 +76,12 @@ export function prfEvalOnCreateExtension(
   } as AuthenticationExtensionsClientInputs;
 }
 
+export function prfEnabledOnCreate(credential: PublicKeyCredential): boolean {
+  const prf = credential.getClientExtensionResults()
+    ?.prf as PrfExtensionResults | undefined;
+  return prf?.enabled === true;
+}
+
 export function bytesToBase64url(bytes: Uint8Array): string {
   return bufferToBase64url(bytes);
 }

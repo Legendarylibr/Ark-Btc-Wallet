@@ -5,11 +5,11 @@ import {
   setStoredReceiveAddress,
 } from "@/lib/storage";
 import { arkClientHeaders } from "@/lib/ark-client";
+import { readResponseJson } from "@/lib/safe-json";
 import {
   walletApi,
   walletApiJson,
   walletApiJsonWithHardware,
-  walletApiWithHardware,
   WalletApiError,
 } from "@/lib/wallet-api";
 import { useCryptoStore } from "@/store/crypto";
@@ -67,8 +67,8 @@ export const useWalletStore = create<WalletState>((set, get) => ({
         cache: "no-store",
         headers: arkClientHeaders(),
       });
-      const data = (await res.json()) as { ok?: boolean };
-      const onboarded = data.ok === true;
+      const data = await readResponseJson<{ ok?: boolean }>(res);
+      const onboarded = data?.ok === true;
       set({
         daemon: onboarded,
         connected: onboarded,
@@ -142,14 +142,10 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   secureFunds: async () => {
     set({ secureStatus: "loading", error: null });
     try {
-      const res = await walletApiWithHardware("/api/wallet/refresh", {
+      await walletApiJsonWithHardware("/api/wallet/refresh", {
         method: "POST",
         body: "",
       });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new WalletApiError(err.error ?? "Refresh failed", res.status);
-      }
       await get().refreshAll();
       set({ secureStatus: "success" });
       setTimeout(() => set({ secureStatus: "idle" }), 3000);

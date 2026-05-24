@@ -21,6 +21,7 @@ export function ActionButtons({
         type="button"
         onClick={onSend}
         disabled={sendDisabled}
+        aria-label="Pay"
         className="flex flex-col items-center gap-2 group disabled:opacity-40"
       >
         <span className="h-16 w-16 rounded-full bg-cash-green flex items-center justify-center text-black shadow-lg shadow-cash-green/25 group-active:scale-95 transition-transform">
@@ -32,6 +33,7 @@ export function ActionButtons({
         type="button"
         onClick={onReceive}
         disabled={receiveDisabled}
+        aria-label="Request"
         className="flex flex-col items-center gap-2 group disabled:opacity-40"
       >
         <span className="h-16 w-16 rounded-full bg-cash-gray-2 flex items-center justify-center text-white border border-white/10 group-active:scale-95 transition-transform">

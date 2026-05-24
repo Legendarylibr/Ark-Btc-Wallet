@@ -3,6 +3,7 @@
  */
 
 import { getValidatedBarkdUrl } from "@/lib/barkd-security";
+import { readResponseJson } from "@/lib/safe-json";
 
 export class BarkdError extends Error {
   constructor(
@@ -44,10 +45,11 @@ async function barkdFetch<T>(
 
   if (!res.ok) {
     let body: unknown;
+    const text = await res.text();
     try {
-      body = await res.json();
+      body = text ? JSON.parse(text) : undefined;
     } catch {
-      body = await res.text();
+      body = text || undefined;
     }
     const msg =
       typeof body === "object" && body !== null && "message" in body
@@ -57,7 +59,14 @@ async function barkdFetch<T>(
   }
 
   if (res.status === 204) return undefined as T;
-  return res.json() as Promise<T>;
+  const data = await readResponseJson<T>(res);
+  if (data == null) {
+    throw new BarkdError(
+      `barkd returned invalid JSON (${res.status})`,
+      res.status,
+    );
+  }
+  return data;
 }
 
 export interface WalletStatus {

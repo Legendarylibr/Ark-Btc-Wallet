@@ -15,6 +15,12 @@ export const VALID_PENDING_OP_TYPES: readonly PendingOpType[] = [
   "read-access",
 ];
 
+const VALID_TYPES = new Set<string>(VALID_PENDING_OP_TYPES);
+
+export function parsePendingOpType(type: string): PendingOpType | null {
+  return VALID_TYPES.has(type) ? (type as PendingOpType) : null;
+}
+
 const READ_PROTECTED_PATHS = new Set([
   "/api/wallet/balance",
   "/api/wallet/history",

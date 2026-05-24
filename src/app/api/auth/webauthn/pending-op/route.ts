@@ -8,17 +8,12 @@ import { barkd } from "@/lib/barkd";
 import { parseJsonBody } from "@/lib/safe-json";
 import { readLimitedBody } from "@/lib/security/request-limits";
 import { getSessionFingerprint } from "@/lib/webauthn/hardware-guard";
-import {
-  createPendingOp,
-  VALID_PENDING_OP_TYPES,
-  type PendingOpType,
-} from "@/lib/webauthn/pending-op";
+import { createPendingOp } from "@/lib/webauthn/pending-op";
+import { parsePendingOpType } from "@/lib/webauthn/pending-op-paths";
 import { PENDING_OP_UNAVAILABLE } from "@/lib/webauthn/setup-gate";
 import { SESSION_COOKIE } from "@/lib/crypto/cookie";
 import { getSession } from "@/lib/crypto/session-store";
 import { clientIp, rateLimit } from "@/lib/crypto/rate-limit";
-
-const VALID_TYPES = new Set<PendingOpType>(VALID_PENDING_OP_TYPES);
 
 async function postHandler(
   request: NextRequest,
@@ -31,16 +26,10 @@ async function postHandler(
   }
 
   const { type, bodyHash } = parsed.data;
-  if (
-    !type ||
-    !bodyHash ||
-    !isValidBodyHash(bodyHash) ||
-    !VALID_TYPES.has(type as PendingOpType)
-  ) {
+  const pendingType = type ? parsePendingOpType(type) : null;
+  if (!pendingType || !bodyHash || !isValidBodyHash(bodyHash)) {
     return NextResponse.json({ error: "Invalid pending operation" }, { status: 400 });
   }
-
-  const pendingType = type as PendingOpType;
 
   let fingerprint: string;
   try {
