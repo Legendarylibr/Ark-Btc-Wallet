@@ -31,6 +31,7 @@ import {
 } from "@/lib/webauthn/constants";
 import { preSessionSignedJson } from "@/lib/pre-session-fetch";
 import { signedFetch } from "@/lib/signed-fetch";
+import { readResponseJson } from "@/lib/safe-json";
 
 import { clearClientEphemeralData } from "@/lib/client-ephemeral";
 import { WALLET_LOCK_TIMEOUT_MS } from "@/lib/security/constants";
@@ -109,14 +110,14 @@ export const useCryptoStore = create<CryptoState>((set, get) => ({
       headers: arkClientHeaders(),
       credentials: "same-origin",
     });
-    const checkBody = (await checkRes.json().catch(() => ({}))) as {
+    const checkBody = await readResponseJson<{
       allowed?: boolean;
       unlockToken?: string;
       error?: string;
-    };
-    if (!checkRes.ok || !checkBody.allowed || !checkBody.unlockToken) {
+    }>(checkRes);
+    if (!checkRes.ok || !checkBody?.allowed || !checkBody.unlockToken) {
       throw new Error(
-        checkBody.error ?? "Too many unlock attempts — wait 15 minutes",
+        checkBody?.error ?? "Too many unlock attempts — wait 15 minutes",
       );
     }
     const unlockToken = checkBody.unlockToken;
@@ -146,14 +147,14 @@ export const useCryptoStore = create<CryptoState>((set, get) => ({
         method: "POST",
         body: readyPayload,
       });
-      const readyBody = (await readyRes.json().catch(() => ({}))) as {
+      const readyBody = await readResponseJson<{
         ready?: boolean;
         error?: string;
-      };
-      if (!readyRes.ok || !readyBody.ready) {
+      }>(readyRes);
+      if (!readyRes.ok || !readyBody?.ready) {
         zeroize(identity.privateKey);
         throw new Error(
-          readyBody.error ??
+          readyBody?.error ??
             "barkd not ready — start barkd on 127.0.0.1 (create a wallet if this is first setup)",
         );
       }
@@ -162,8 +163,13 @@ export const useCryptoStore = create<CryptoState>((set, get) => ({
         credentials: "same-origin",
         headers: arkClientHeaders(),
       });
-      if (!challengeRes.ok) throw new Error("Could not get challenge");
-      const { challenge } = await challengeRes.json();
+      const challengeBody = await readResponseJson<{ challenge?: string }>(
+        challengeRes,
+      );
+      if (!challengeRes.ok || !challengeBody?.challenge) {
+        throw new Error("Could not get challenge");
+      }
+      const { challenge } = challengeBody;
 
       const nonce = crypto.randomUUID();
       const timestamp = Date.now();
@@ -206,15 +212,17 @@ export const useCryptoStore = create<CryptoState>((set, get) => ({
         body: registerBody,
       });
 
-      if (!reg.ok) {
-        const err = await reg.json();
-        throw new Error(err.error ?? "Session registration failed");
-      }
-
-      const data = (await reg.json()) as {
+      const data = await readResponseJson<{
+        error?: string;
         firstPin?: boolean;
         fingerprint?: string;
-      };
+      }>(reg);
+      if (!reg.ok) {
+        throw new Error(data?.error ?? "Session registration failed");
+      }
+      if (!data) {
+        throw new Error("Invalid response from server");
+      }
 
       let pairingNotice: string | null = null;
       if (data.firstPin && data.fingerprint) {

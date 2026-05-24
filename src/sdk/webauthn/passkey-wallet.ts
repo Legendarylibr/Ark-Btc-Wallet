@@ -19,6 +19,7 @@ import {
 } from "@/sdk/crypto/prf-vault";
 import { encryptSecret } from "@/lib/crypto/vault";
 import { zeroize } from "@/lib/crypto/vault";
+import { assertWebAuthnAvailable } from "@/lib/webauthn/availability";
 import { getSdkWebAuthnConfig } from "./config";
 import { consumeSdkChallenge, storeSdkChallenge, sdkPasskeyOpChallenge } from "./challenges";
 import {
@@ -28,6 +29,7 @@ import {
   extractPrfFirst,
   generatePrfSalt,
   isPrfSupported,
+  prfEnabledOnCreate,
   prfEvalExtension,
   prfEvalOnCreateExtension,
 } from "./prf";
@@ -50,12 +52,6 @@ export async function hasPasskeyRecoveryBackup(): Promise<boolean> {
   return (await loadSdkMnemonicBackupVault()) != null;
 }
 
-async function assertWebAuthn(): Promise<void> {
-  if (typeof window === "undefined" || !window.PublicKeyCredential) {
-    throw new Error("WebAuthn is not available in this browser");
-  }
-}
-
 async function saveRecoveryPassphraseVault(
   recoveryPassphrase: string,
   mnemonic: string,
@@ -73,6 +69,7 @@ async function evaluatePrfWithCredential(
   credentialId: string,
   prfSalt: Uint8Array,
 ): Promise<ArrayBuffer> {
+  assertWebAuthnAvailable();
   const challenge = crypto.getRandomValues(new Uint8Array(32));
   const assertion = (await navigator.credentials.get({
     publicKey: {
@@ -107,6 +104,7 @@ async function verifyPasskeyPrfForOp(
   opId: string,
   bodyHash: string,
 ): Promise<void> {
+  assertWebAuthnAvailable();
   const { rpID } = getSdkWebAuthnConfig();
   const prfSalt = base64ToBytes(record.prfSalt);
   const challenge = new Uint8Array(
@@ -153,7 +151,7 @@ export async function createSdkWalletWithPasskey(
   mnemonic: string,
   recoveryPassphrase: string,
 ): Promise<void> {
-  await assertWebAuthn();
+  assertWebAuthnAvailable();
   if (!(await isPrfSupported())) {
     throw new Error(
       "Passkey PRF is not supported in this browser. Use recovery passphrase mode or try Chrome/Safari with Touch ID, Windows Hello, or a YubiKey 5.",
@@ -207,12 +205,17 @@ export async function createSdkWalletWithPasskey(
   let prfOutput = extractPrfFirst(credential);
   const credentialId = bufferToBase64url(credential.rawId);
 
+  if (!prfOutput && !prfEnabledOnCreate(credential)) {
+    throw new Error(
+      "This passkey does not support PRF. Try another authenticator (YubiKey 5, Touch ID, Windows Hello).",
+    );
+  }
   if (!prfOutput) {
     prfOutput = await evaluatePrfWithCredential(credentialId, prfSalt);
   }
   if (!prfOutput) {
     throw new Error(
-      "This passkey does not support PRF. Try another authenticator (YubiKey 5, Touch ID, Windows Hello).",
+      "Could not derive wallet key from passkey (PRF failed)",
     );
   }
 
@@ -235,7 +238,7 @@ export async function confirmPasskeySensitiveOp(
   type: SdkPendingOpType,
   bodyHash: string,
 ): Promise<void> {
-  await assertWebAuthn();
+  assertWebAuthnAvailable();
   const record = await loadSdkPasskeyWallet();
   if (!record) throw new Error("No passkey wallet");
 
@@ -249,7 +252,7 @@ export async function confirmPasskeySensitiveOp(
 
 /** Unlock: passkey tap derives decryption key (no passphrase) */
 export async function unlockSdkWalletWithPasskey(): Promise<string> {
-  await assertWebAuthn();
+  assertWebAuthnAvailable();
   const record = await loadSdkPasskeyWallet();
   if (!record) throw new Error("No passkey wallet — create one first");
 

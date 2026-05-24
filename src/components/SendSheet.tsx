@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Sheet } from "@/components/ui/Sheet";
 import { Button } from "@/components/ui/Button";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { isSendConfirmDisabled } from "@/lib/send-confirm";
 import { isArkAddress } from "@/lib/utils";
 import { walletApiJsonWithHardware } from "@/lib/wallet-api";
 import { Check, Delete } from "lucide-react";
@@ -312,13 +313,12 @@ export function SendSheet({
           </p>
           <Button
             className="w-full"
-            disabled={
-              loading ||
-              estimateLoading ||
-              !estimate ||
-              !!error ||
-              !estimate.affordable
-            }
+            disabled={isSendConfirmDisabled({
+              loading,
+              estimateLoading,
+              estimate,
+              error,
+            })}
             onClick={handleSend}
           >
             {loading ? "Confirm on device…" : "Confirm & Pay"}
