@@ -29,11 +29,7 @@ export class WalletApiError extends Error {
 async function parse401(
   res: Response,
 ): Promise<{ error?: string; code?: string }> {
-  try {
-    return (await res.json()) as { error?: string; code?: string };
-  } catch {
-    return {};
-  }
+  return (await readResponseJson<{ error?: string; code?: string }>(res)) ?? {};
 }
 
 function getIdentity() {
