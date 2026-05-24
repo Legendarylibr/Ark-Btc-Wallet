@@ -13,9 +13,8 @@ import {
   consumePendingOp,
   invalidatePendingOp,
   matchesPendingOp,
-  pendingOpTypeForPath,
-  type PendingOpType,
 } from "./pending-op";
+import { pendingOpTypeForPath, type PendingOpType } from "./pending-op-paths";
 
 export {
   HARDWARE_AUTH_HEADER,

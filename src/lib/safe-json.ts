@@ -1,3 +1,5 @@
+import { MAX_API_BODY_BYTES } from "@/lib/security/constants";
+
 /** Parse JSON from a fetch Response; returns null when the body is not JSON. */
 export async function readResponseJson<T>(res: Response): Promise<T | null> {
   try {
@@ -6,20 +8,6 @@ export async function readResponseJson<T>(res: Response): Promise<T | null> {
     return null;
   }
 }
-
-export function safeParseJson<T>(
-  text: string,
-  fallback: T,
-): T {
-  if (!text.trim()) return fallback;
-  try {
-    return JSON.parse(text) as T;
-  } catch {
-    return fallback;
-  }
-}
-
-import { MAX_API_BODY_BYTES } from "@/lib/security/constants";
 
 export function parseJsonBody<T extends object>(
   bodyText: string,

@@ -9,7 +9,6 @@ import { readResponseJson } from "@/lib/safe-json";
 import {
   walletApi,
   walletApiJson,
-  walletApiJsonWithHardware,
   WalletApiError,
 } from "@/lib/wallet-api";
 import { useCryptoStore } from "@/store/crypto";
@@ -118,9 +117,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   fetchAddress: async (rotate = false) => {
     const url = rotate ? "/api/wallet/address?rotate=1" : "/api/wallet/address";
     try {
-      const { address } = rotate
-        ? await walletApiJsonWithHardware<{ address: string }>(url)
-        : await walletApiJson<{ address: string }>(url);
+      const { address } = await walletApiJson<{ address: string }>(url);
       setStoredReceiveAddress(address);
       set({ receiveAddress: address, error: null });
     } catch (e) {
@@ -142,7 +139,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   secureFunds: async () => {
     set({ secureStatus: "loading", error: null });
     try {
-      await walletApiJsonWithHardware("/api/wallet/refresh", {
+      await walletApiJson("/api/wallet/refresh", {
         method: "POST",
         body: "",
       });

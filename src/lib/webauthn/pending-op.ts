@@ -7,11 +7,6 @@ import {
 } from "./pending-op-store";
 
 export type { PendingOpType } from "./pending-op-paths";
-export {
-  isReadProtectedPath,
-  pendingOpTypeForPath,
-  VALID_PENDING_OP_TYPES,
-} from "./pending-op-paths";
 
 import type { PendingOpType } from "./pending-op-paths";
 

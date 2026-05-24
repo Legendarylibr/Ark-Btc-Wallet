@@ -25,7 +25,6 @@ import { consumeSdkChallenge, storeSdkChallenge, sdkPasskeyOpChallenge } from ".
 import {
   base64urlToBuffer,
   bytesToBase64url,
-  bufferToBase64url,
   extractPrfFirst,
   generatePrfSalt,
   isPrfSupported,
@@ -86,7 +85,7 @@ async function evaluatePrfWithCredential(
 
   if (!assertion) throw new Error("Passkey authentication cancelled");
 
-  const gotId = bufferToBase64url(assertion.rawId);
+  const gotId = bytesToBase64url(assertion.rawId);
   if (gotId !== credentialId) {
     throw new Error("Passkey credential mismatch");
   }
@@ -133,7 +132,7 @@ async function verifyPasskeyPrfForOp(
     throw new Error("Operation expired — try again");
   }
 
-  const gotId = bufferToBase64url(assertion.rawId);
+  const gotId = bytesToBase64url(assertion.rawId);
   if (gotId !== record.credentialId) {
     throw new Error("Passkey credential mismatch");
   }
@@ -197,13 +196,13 @@ export async function createSdkWalletWithPasskey(
 
   if (!credential) throw new Error("Passkey creation cancelled");
 
-  const challengeB64 = bufferToBase64url(challenge.buffer);
+  const challengeB64 = bytesToBase64url(challenge.buffer);
   if (!consumeSdkChallenge(`passkey-create:${walletId}`, challengeB64)) {
     throw new Error("Passkey setup expired — try again");
   }
 
   let prfOutput = extractPrfFirst(credential);
-  const credentialId = bufferToBase64url(credential.rawId);
+  const credentialId = bytesToBase64url(credential.rawId);
 
   if (!prfOutput && !prfEnabledOnCreate(credential)) {
     throw new Error(

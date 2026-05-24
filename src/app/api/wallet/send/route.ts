@@ -5,7 +5,7 @@ import {
   barkd,
   estimateArkSendFee,
 } from "@/lib/barkd";
-import { isArkAddress } from "@/lib/utils";
+import { isValidArkAddress } from "@/lib/ark-address";
 import { parseJsonBody } from "@/lib/safe-json";
 import { parseAmountSat, canAffordSend } from "@/lib/validate";
 import { safeApiError } from "@/lib/safe-error";
@@ -27,7 +27,7 @@ const guarded = withSensitiveCryptoGuard(async (_req, bodyText) => {
         { status: 400 },
       );
     }
-    if (!isArkAddress(destination)) {
+    if (!isValidArkAddress(destination)) {
       return NextResponse.json(
         { error: "Only valid Ark addresses (ark1…) are supported" },
         { status: 400 },
