@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { isValidArkAddress } from "@/lib/ark-address";
-import { isArkAddress, truncateAddress } from "@/lib/utils";
+import { truncateAddress } from "@/lib/utils";
 
 describe("ark-address", () => {
   it("rejects non-ark and malformed addresses", () => {
@@ -10,9 +10,6 @@ describe("ark-address", () => {
     expect(isValidArkAddress("")).toBe(false);
   });
 
-  it("isArkAddress delegates to validator", () => {
-    expect(isArkAddress("not-ark")).toBe(false);
-  });
 });
 
 describe("truncateAddress", () => {

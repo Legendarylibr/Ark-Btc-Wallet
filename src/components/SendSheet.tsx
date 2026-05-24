@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { Sheet } from "@/components/ui/Sheet";
 import { Button } from "@/components/ui/Button";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { isValidArkAddress } from "@/lib/ark-address";
 import { isSendConfirmDisabled } from "@/lib/send-confirm";
-import { isArkAddress } from "@/lib/utils";
-import { walletApiJsonWithHardware } from "@/lib/wallet-api";
+import { walletApiJson } from "@/lib/wallet-api";
 import { Check, Delete } from "lucide-react";
 
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "del"] as const;
@@ -77,7 +77,7 @@ export function SendSheet({
   };
 
   useEffect(() => {
-    if (step !== "confirm" || !isArkAddress(address) || amountSat < 1) {
+    if (step !== "confirm" || !isValidArkAddress(address) || amountSat < 1) {
       setEstimate(null);
       return;
     }
@@ -108,7 +108,7 @@ export function SendSheet({
     setEstimateLoading(true);
     setError(null);
 
-    walletApiJsonWithHardware<SendEstimate>("/api/wallet/send/estimate", {
+    walletApiJson<SendEstimate>("/api/wallet/send/estimate", {
       method: "POST",
       body: JSON.stringify({
         destination: address.trim(),
@@ -140,7 +140,7 @@ export function SendSheet({
       if (sdkSend) {
         await sdkSend(address.trim(), amountSat);
       } else {
-        await walletApiJsonWithHardware("/api/wallet/send", {
+        await walletApiJson("/api/wallet/send", {
           method: "POST",
           body: JSON.stringify({
             destination: address.trim(),
@@ -245,7 +245,7 @@ export function SendSheet({
             </Button>
             <Button
               className="flex-1"
-              disabled={!isArkAddress(address)}
+              disabled={!isValidArkAddress(address)}
               onClick={() => {
                 setError(null);
                 setStep("confirm");

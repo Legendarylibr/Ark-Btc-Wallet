@@ -26,12 +26,6 @@ export class WalletApiError extends Error {
   }
 }
 
-async function parse401(
-  res: Response,
-): Promise<{ error?: string; code?: string }> {
-  return (await readResponseJson<{ error?: string; code?: string }>(res)) ?? {};
-}
-
 function getIdentity() {
   try {
     return useCryptoStore.getState().getIdentity();
@@ -49,7 +43,8 @@ export async function walletApi(
   const res = await signedFetch(identity, path, init);
 
   if (res.status === 401) {
-    const body = await parse401(res);
+    const body =
+      (await readResponseJson<{ error?: string; code?: string }>(res)) ?? {};
     if (body.code === "HARDWARE_READ_REQUIRED") {
       return res;
     }
@@ -89,7 +84,8 @@ async function walletApiWithReadAccess(
   }
   const res = await walletApi(path, { ...init, headers });
   if (res.status === 401) {
-    const body = await parse401(res);
+    const body =
+      (await readResponseJson<{ error?: string; code?: string }>(res)) ?? {};
     await useCryptoStore.getState().lock();
     throw new WalletApiError(
       body.error ?? "Session expired — unlock again",
@@ -150,7 +146,8 @@ async function walletApiForPath(
   if (needsReadHardware) {
     let res = await walletApi(path, init);
     if (res.status === 401) {
-      const body = await parse401(res);
+      const body =
+        (await readResponseJson<{ error?: string; code?: string }>(res)) ?? {};
       if (body.code === "HARDWARE_READ_REQUIRED") {
         res = await walletApiWithReadAccess(path, init);
       }
@@ -183,13 +180,5 @@ export async function walletApiJson<T>(
   init: RequestInit = {},
 ): Promise<T> {
   const res = await walletApiForPath(path, init);
-  return parseWalletApiJson<T>(res);
-}
-
-export async function walletApiJsonWithHardware<T>(
-  path: string,
-  init: RequestInit = {},
-): Promise<T> {
-  const res = await walletApiWithHardware(path, init);
   return parseWalletApiJson<T>(res);
 }

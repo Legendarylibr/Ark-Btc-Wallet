@@ -1,6 +1,6 @@
 "use client";
 
-function bufferToBase64url(buf: ArrayBuffer | Uint8Array): string {
+export function bytesToBase64url(buf: ArrayBuffer | Uint8Array): string {
   const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
   let bin = "";
   for (const b of bytes) bin += String.fromCharCode(b);
@@ -82,8 +82,4 @@ export function prfEnabledOnCreate(credential: PublicKeyCredential): boolean {
   return prf?.enabled === true;
 }
 
-export function bytesToBase64url(bytes: Uint8Array): string {
-  return bufferToBase64url(bytes);
-}
-
-export { bufferToBase64url, base64urlToBuffer };
+export { base64urlToBuffer };

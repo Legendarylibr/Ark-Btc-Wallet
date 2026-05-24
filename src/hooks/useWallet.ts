@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useWalletStore } from "@/store/wallet";
 import { useCryptoStore } from "@/store/crypto";
@@ -9,19 +9,11 @@ const SYNC_INTERVAL_MS = 15_000;
 const HEALTH_POLL_MS = 5_000;
 
 export function useWallet() {
-  const {
-    onboarded,
-    connected,
-    balance,
-    history,
-    receiveAddress,
-    sheet,
-    loading,
-    error,
-    secureStatus,
-    setSheet,
-    fetchHealth,
-  } = useWalletStore(
+  const cryptoReady = useCryptoStore(
+    (s) => s.identity != null && s.sessionRegistered,
+  );
+
+  const wallet = useWalletStore(
     useShallow((s) => ({
       onboarded: s.onboarded,
       connected: s.connected,
@@ -34,12 +26,13 @@ export function useWallet() {
       secureStatus: s.secureStatus,
       setSheet: s.setSheet,
       fetchHealth: s.fetchHealth,
+      fetchAddress: s.fetchAddress,
+      refreshAll: s.refreshAll,
+      secureFunds: s.secureFunds,
     })),
   );
 
-  const cryptoReady = useCryptoStore(
-    (s) => s.identity != null && s.sessionRegistered,
-  );
+  const { onboarded } = wallet;
 
   useEffect(() => {
     useWalletStore.getState().fetchHealth();
@@ -64,36 +57,5 @@ export function useWallet() {
     return () => clearInterval(id);
   }, [onboarded, cryptoReady]);
 
-  const fetchAddressCb = useCallback(
-    (rotate?: boolean) => useWalletStore.getState().fetchAddress(rotate),
-    [],
-  );
-
-  const refreshAllCb = useCallback(
-    () => useWalletStore.getState().refreshAll(),
-    [],
-  );
-
-  const secureFundsCb = useCallback(
-    () => useWalletStore.getState().secureFunds(),
-    [],
-  );
-
-  return {
-    onboarded,
-    connected,
-    balance,
-    history,
-    receiveAddress,
-    sheet,
-    loading,
-    error,
-    secureStatus,
-    cryptoReady,
-    setSheet,
-    fetchHealth,
-    fetchAddress: fetchAddressCb,
-    refreshAll: refreshAllCb,
-    secureFunds: secureFundsCb,
-  };
+  return { ...wallet, cryptoReady };
 }

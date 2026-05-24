@@ -21,7 +21,7 @@ import {
 } from "./pending-op";
 import { getSdkWalletId } from "./wallet-id";
 import { assertWebAuthnAvailable } from "@/lib/webauthn/availability";
-import { base64urlToBuffer, bufferToBase64url } from "./prf";
+import { base64urlToBuffer, bytesToBase64url } from "./prf";
 
 export async function sdkHardwareRegistered(): Promise<boolean> {
   const walletId = await getSdkWalletId();
@@ -44,7 +44,7 @@ export async function registerSdkHardware(passphrase: string): Promise<void> {
 
   const { rpName, rpID } = getSdkWebAuthnConfig();
   const challenge = crypto.getRandomValues(new Uint8Array(32));
-  const challengeB64 = bufferToBase64url(challenge.buffer);
+  const challengeB64 = bytesToBase64url(challenge.buffer);
   storeSdkChallenge(`reg:${walletId}`, challenge);
 
   const userId = base64ToBytes(walletId).slice(0, 64);
@@ -88,7 +88,7 @@ export async function registerSdkHardware(passphrase: string): Promise<void> {
 
   await saveSdkHardwareCredential({
     walletId,
-    credentialId: bufferToBase64url(credential.rawId),
+    credentialId: bytesToBase64url(credential.rawId),
     publicKey: bytesToBase64(new Uint8Array(publicKey)),
     counter: 0,
   });
@@ -106,7 +106,7 @@ async function authenticateSdkHardware(
 
   const { rpID } = getSdkWebAuthnConfig();
   const challenge = crypto.getRandomValues(new Uint8Array(32));
-  const challengeB64 = bufferToBase64url(challenge.buffer);
+  const challengeB64 = bytesToBase64url(challenge.buffer);
   storeSdkChallenge(`auth:${walletId}:${opId}`, challenge);
 
   const assertion = (await navigator.credentials.get({

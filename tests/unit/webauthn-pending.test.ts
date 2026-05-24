@@ -4,10 +4,12 @@ import {
   createPendingOp,
   invalidatePendingOp,
   matchesPendingOp,
+} from "@/lib/webauthn/pending-op";
+import {
+  parsePendingOpType,
   pendingOpTypeForPath,
   VALID_PENDING_OP_TYPES,
-} from "@/lib/webauthn/pending-op";
-import { parsePendingOpType } from "@/lib/webauthn/pending-op-paths";
+} from "@/lib/webauthn/pending-op-paths";
 import { HARDWARE_REQUIRED_PATHS } from "@/lib/webauthn/constants";
 import { cleanupTempWalletDataDirs, useTempWalletDataDir } from "../helpers/env";
 
