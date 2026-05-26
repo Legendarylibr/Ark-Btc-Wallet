@@ -48,13 +48,14 @@ A stolen session cookie **cannot** spend without the Ed25519 private key (passph
 
 ### Server-side state (`.ark-wallet-data/`)
 
-Encrypted with `SESSION_SECRET` (AES-256-GCM):
+Encrypted with `SESSION_SECRET` (AES-256-GCM). Reads and writes go through `src/lib/encrypted-file.ts`, which wraps each mutation in **`withFileLockSync`** (`src/lib/file-lock.ts`) so concurrent Node workers on the **same machine** sharing one data directory do not corrupt JSON stores.
 
 - `sessions.enc.json` — API sessions (pubkey, bark fingerprint, client binding)
 - `nonces.enc.json` — replay protection (survives restart)
 - `unlock-limits.enc.json` — unlock rate limits per IP
 - `pubkey-pins.enc.json` — one Ed25519 pubkey per barkd fingerprint
 - `webauthn.enc.json` — FIDO credentials per fingerprint
+- `pending-ops.enc.json` — single-use WebAuthn pending operations
 
 ### Canonical API signing (v2)
 
@@ -103,4 +104,11 @@ Both modes lock after **5 minutes** idle (`WALLET_LOCK_TIMEOUT_MS`). SDK mode al
 
 ## Deployment assumptions
 
-Run **one** Next.js process per machine for barkd mode. Encrypted server state (sessions, nonces, rate limits) is stored in `.ark-wallet-data/` without cross-process locking; multiple workers or replicas can race on the same data directory.
+| Rule | Why |
+|------|-----|
+| **One machine, one `WALLET_DATA_DIR`** | Sessions, nonces, and pins are local files — not safe on shared NFS/SMB across hosts. |
+| **Multiple Node workers OK on that host** | `withFileLockSync` serializes encrypted-file updates; see `tests/unit/multi-worker-stores.test.ts`. |
+| **No replicated fleet sharing one dir** | File locks do not coordinate across machines. |
+| **Loopback only** | See [SECURITY.md](../SECURITY.md) — do not expose `:3000` or barkd `:3535`. |
+
+Prefer a **single** Next.js process for simplicity; if you use PM2 cluster mode, point every worker at the same `.ark-wallet-data/` path on local disk only.

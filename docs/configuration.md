@@ -54,7 +54,14 @@ Copy [.env.example](../.env.example) to `.env.local` for local development.
 | Path | Contents |
 |------|----------|
 | `~/.bark` (bark CLI) | barkd wallet datadir (created by `bark create`) |
-| `.ark-wallet-data/` (app) | Encrypted sessions, pins, WebAuthn, nonces |
+| `.ark-wallet-data/` (app) | Encrypted sessions, pins, WebAuthn, nonces, pending ops |
 | Browser IndexedDB | Ed25519 vault (barkd mode) or SDK mnemonic / passkey vaults |
 
 Reset app pairing only when intentional — deleting `pubkey-pins.enc.json` or `webauthn.enc.json` breaks existing device pairing for that barkd wallet.
+
+### `WALLET_DATA_DIR` and multiple processes
+
+- Set `WALLET_DATA_DIR` to an absolute path on **local disk** (default: `.ark-wallet-data` under the app cwd).
+- **One host** may run several Node workers (e.g. PM2) against the **same** directory; `src/lib/file-lock.ts` exclusive locks prevent corrupting encrypted JSON during concurrent writes.
+- **Do not** point multiple machines or containers at the same directory over the network.
+- Prefer a single Next.js process unless you need clustering — see [architecture.md](architecture.md#deployment-assumptions).

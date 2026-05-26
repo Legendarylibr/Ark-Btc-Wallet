@@ -58,13 +58,18 @@ describe("API route handlers", () => {
     cleanupTempWalletDataDirs();
   });
 
-  it("GET /api/health returns daemon ok", async () => {
+  it("GET /api/health returns daemon ok with security headers", async () => {
     useTempWalletDataDir();
     const { GET } = await import("@/app/api/health/route");
     const res = await GET(apiRequest("/api/health"));
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body).toEqual({ ok: true });
+    expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
+    expect(res.headers.get("X-Frame-Options")).toBe("DENY");
+    expect(res.headers.get("Content-Security-Policy")).toContain(
+      "default-src 'none'",
+    );
   });
 
   it("GET /api/wallet/ready is deprecated", async () => {
