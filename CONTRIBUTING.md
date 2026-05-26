@@ -34,11 +34,10 @@ src/
   store/            Zustand (crypto, wallet, sdk-wallet)
 tests/unit/         Vitest — prefer tests for security-sensitive logic
 docs/               User and operator guides
-packages/bark-ffi-bindings/  Large vendored FFI tree (only needed for `npm run build:bark-wasm`)
-packages/bark-wasm/          Built WASM output when SDK mode is enabled
+packages/bark-wasm/          WASM package; `npm run vendor:bark-wasm` clones upstream bindings beside it when building SDK
 ```
 
-Cloning the full repo downloads `packages/bark-ffi-bindings/` (~large). You can skip it for barkd-only work; SDK builds use `npm run vendor:bark-wasm` when needed.
+Barkd-only work does not need a WASM build. SDK mode runs `npm run vendor:bark-wasm` (clones bindings via Git) then `npm run build:bark-wasm`.
 
 | Change type | Also update |
 |-------------|-------------|

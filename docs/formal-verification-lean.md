@@ -66,7 +66,7 @@ lean/
     └── Examples.lean                -- `#eval` on small attack traces
 ```
 
-Use **Lean 4** + `batteries` + `Std`. No existing `lean/` directory today — this is greenfield.
+Use **Lean 4** + `lake` (toolchain: `lean/lean-toolchain`). The `lean/` tree is maintained in-repo — run `npm run fv` to regenerate `FvFixtures.lean` and `lake build`. Module index: [lean/README.md](../lean/README.md).
 
 ---
 

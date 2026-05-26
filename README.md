@@ -224,7 +224,7 @@ npm run build        # production build (needs SESSION_SECRET + BARKD_AUTH_TOKEN
 |---------|---------|
 | `npm run dev` | Development server (Turbopack) |
 | `npm run build` / `npm run start` | Production build and server |
-| `npm test` | Vitest (100+ unit tests) |
+| `npm test` | Vitest (170+ unit tests) |
 | `npm run lockdown:local` | Hints to lock down local ports |
 
 ---
