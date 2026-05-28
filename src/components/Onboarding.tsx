@@ -29,7 +29,7 @@ barkd`}
       </pre>
       <ul className="space-y-4 mb-10">
         {[
-          { icon: Shield, text: "Passphrase + hardware key (YubiKey / Touch ID)" },
+          { icon: Shield, text: "Passphrase + YubiKey (FIDO2 security key)" },
           { icon: Zap, text: "Ed25519 signature on every API call" },
           { icon: Wifi, text: "Ark payments signed by barkd" },
         ].map(({ icon: Icon, text }) => (

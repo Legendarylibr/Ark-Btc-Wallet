@@ -300,8 +300,8 @@ export function SendSheet({
           )}
           <ErrorBanner message={error} className="text-center" />
           <p className="text-cash-muted text-xs text-center leading-relaxed px-2">
-            One security-key or passkey prompt when you tap below — fee preview
-            above does not require a separate confirmation.
+            One YubiKey tap when you tap below — fee preview above does not
+            require a separate confirmation.
           </p>
           <Button
             className="w-full"

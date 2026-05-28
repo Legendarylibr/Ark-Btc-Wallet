@@ -38,7 +38,7 @@ Passkey (PRF) mode requires a **recovery passphrase** at create. Pay / Secure / 
 
 - Ed25519 + UUID v4 nonces on `/api/wallet/*` (nonces persisted across restart)
 - Middleware rejects malformed session cookies / nonces before handlers run
-- Server WebAuthn on unlock, pay, secure, and rotate (pending-op body binding + credential ID match); fee estimate is Ed25519-only (no hardware)
+- Server WebAuthn on unlock, pay, secure, and rotate (pending-op body binding + credential ID match); **FIDO2 security keys only** (`cross-platform` — no Touch ID / Windows Hello); fee estimate is Ed25519-only (no hardware)
 - `x-ark-client` identifies browser traffic only — not a secret; security relies on loopback, signing, and WebAuthn
 - Loopback Host/Origin, `x-ark-client`, block `Sec-Fetch-Site: cross-site` and `Sec-Fetch-Dest: document` on API POSTs
 - Production mutations require `Sec-Fetch-Site: same-origin` (override with `RELAX_FETCH_SITE=true`)

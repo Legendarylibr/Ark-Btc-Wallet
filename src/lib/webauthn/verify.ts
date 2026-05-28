@@ -19,19 +19,19 @@ import {
   updateWebAuthnCounter,
   type StoredWebAuthnCredential,
 } from "./store";
+import {
+  isAllowedSecurityKeyDeviceType,
+  SECURITY_KEY_ONLY_MESSAGE,
+  SECURITY_KEY_TRANSPORTS,
+  type SecurityKeyTransport,
+} from "./security-key-policy";
 
 function credForVerify(stored: StoredWebAuthnCredential) {
   return {
     id: stored.credentialId,
     publicKey: Buffer.from(stored.publicKey, "base64"),
     counter: stored.counter,
-    transports: ["usb", "nfc", "ble", "internal", "hybrid"] as (
-      | "usb"
-      | "nfc"
-      | "ble"
-      | "internal"
-      | "hybrid"
-    )[],
+    transports: [...SECURITY_KEY_TRANSPORTS] as SecurityKeyTransport[],
   };
 }
 
@@ -65,6 +65,10 @@ export async function verifyHardwareRegistration(
 
     if (response.id !== credential.id) {
       return { ok: false, error: "Hardware credential mismatch" };
+    }
+
+    if (!isAllowedSecurityKeyDeviceType(credentialDeviceType)) {
+      return { ok: false, error: SECURITY_KEY_ONLY_MESSAGE };
     }
 
     const saved = saveWebAuthnCredential(fingerprint, {

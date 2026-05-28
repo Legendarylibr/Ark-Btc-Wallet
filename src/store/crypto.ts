@@ -123,7 +123,7 @@ export const useCryptoStore = create<CryptoState>((set, get) => ({
     const unlockToken = checkBody.unlockToken;
 
     if (!get().hardwareRegistered) {
-      throw new Error("Register a security key or passkey first");
+      throw new Error("Register a YubiKey or FIDO2 security key first");
     }
 
     const vault = await loadVaultFromStorage();

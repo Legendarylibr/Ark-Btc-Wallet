@@ -15,10 +15,9 @@ export function RegisterHardware({ onComplete }: RegisterHardwareProps) {
     <HardwareRegistrationForm
       description={
         <>
-          Register a <strong className="text-white">YubiKey</strong>,{" "}
-          <strong className="text-white">Touch ID</strong>,{" "}
-          <strong className="text-white">Windows Hello</strong>, or another
-          passkey. Your passphrase proves you own this device&apos;s signing key
+          Register a <strong className="text-white">YubiKey</strong> or other
+          FIDO2 security key (USB / NFC). Touch ID and Windows Hello are not
+          supported. Your passphrase proves you own this device&apos;s signing key
           before enrollment.
         </>
       }
@@ -26,7 +25,7 @@ export function RegisterHardware({ onComplete }: RegisterHardwareProps) {
         <>
           <li className="flex gap-2">
             <Fingerprint size={14} className="shrink-0 mt-0.5 text-cash-green" />
-            Unlock requires passphrase + hardware
+            Unlock requires passphrase + YubiKey tap
           </li>
           <li className="flex gap-2">
             <Fingerprint size={14} className="shrink-0 mt-0.5 text-cash-green" />
@@ -37,13 +36,12 @@ export function RegisterHardware({ onComplete }: RegisterHardwareProps) {
             Auto-lock after 5 minutes idle
           </li>
           <li className="text-amber-200/80">
-            Use http://localhost:3000 if Touch ID / passkey prompts fail on
-            127.0.0.1
+            Use http://localhost:3000 if your YubiKey prompt fails on 127.0.0.1
           </li>
         </>
       }
       emptyPassphraseMessage="Enter your wallet passphrase to authorize hardware registration"
-      submitLabel="Register security key / passkey"
+      submitLabel="Register YubiKey / security key"
       onRegister={registerHardware}
       onComplete={onComplete}
     />

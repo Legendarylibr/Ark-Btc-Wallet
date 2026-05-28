@@ -55,8 +55,8 @@ export function SetupCrypto({ onComplete }: SetupCryptoProps) {
       <h1 className="text-2xl font-bold mb-2">Secure this device</h1>
       <p className="text-cash-muted text-sm mb-6 leading-relaxed">
         Create a passphrase (12+ chars, letters and numbers) for your Ed25519
-        signing key in IndexedDB. Next you will register a security key or
-        passkey — barkd still holds bitcoin keys on this machine.
+        signing key in IndexedDB. Next you will register a YubiKey or FIDO2
+        security key — barkd still holds bitcoin keys on this machine.
       </p>
       <form onSubmit={handleSubmit} className="space-y-4">
         <label className="block">

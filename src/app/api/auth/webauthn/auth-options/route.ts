@@ -11,6 +11,7 @@ import { getPendingOpDetails } from "@/lib/webauthn/pending-op";
 import { verifyPendingOpCreatorAccess } from "@/lib/webauthn/verify-pending-op-access";
 import { HARDWARE_AUTH_UNAVAILABLE } from "@/lib/webauthn/setup-gate";
 import { clientIp, rateLimit } from "@/lib/crypto/rate-limit";
+import { SECURITY_KEY_TRANSPORTS } from "@/lib/webauthn/security-key-policy";
 
 function hardwareAuthUnavailable(): NextResponse {
   return NextResponse.json(
@@ -74,7 +75,7 @@ export async function GET(req: NextRequest) {
       allowCredentials: [
         {
           id: stored.credentialId,
-          transports: ["usb", "nfc", "ble", "internal", "hybrid"],
+          transports: [...SECURITY_KEY_TRANSPORTS],
         },
       ],
       userVerification: "required",

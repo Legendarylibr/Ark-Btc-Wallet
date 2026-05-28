@@ -21,6 +21,10 @@ import {
 } from "./pending-op";
 import { getSdkWalletId } from "./wallet-id";
 import { assertWebAuthnAvailable } from "@/lib/webauthn/availability";
+import {
+  SECURITY_KEY_AUTHENTICATOR_SELECTION,
+  SECURITY_KEY_TRANSPORTS,
+} from "@/lib/webauthn/security-key-policy";
 import { base64urlToBuffer, bytesToBase64url } from "./prf";
 
 export async function sdkHardwareRegistered(): Promise<boolean> {
@@ -29,7 +33,7 @@ export async function sdkHardwareRegistered(): Promise<boolean> {
   return walletId != null && cred != null && cred.walletId === walletId;
 }
 
-/** Passphrase proves vault ownership before enrolling Touch ID / YubiKey */
+/** Passphrase proves vault ownership before enrolling a FIDO2 security key */
 export async function registerSdkHardware(passphrase: string): Promise<void> {
   assertWebAuthnAvailable();
   await loadSdkMnemonic(passphrase);
@@ -59,8 +63,7 @@ export async function registerSdkHardware(passphrase: string): Promise<void> {
       },
       pubKeyCredParams: [{ alg: -7, type: "public-key" }],
       authenticatorSelection: {
-        userVerification: "required",
-        residentKey: "preferred",
+        ...SECURITY_KEY_AUTHENTICATOR_SELECTION,
       },
       timeout: 120_000,
     },
@@ -117,6 +120,7 @@ async function authenticateSdkHardware(
         {
           id: base64urlToBuffer(stored.credentialId),
           type: "public-key",
+          transports: [...SECURITY_KEY_TRANSPORTS],
         },
       ],
       userVerification: "required",

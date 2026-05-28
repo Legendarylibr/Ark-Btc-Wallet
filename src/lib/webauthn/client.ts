@@ -70,7 +70,7 @@ async function obtainSetupToken(identity: UnlockedIdentity): Promise<string> {
   return setupToken;
 }
 
-/** Register YubiKey / Touch ID — requires passphrase to prove vault ownership */
+/** Register a FIDO2 security key (YubiKey) — requires passphrase to prove vault ownership */
 export async function registerHardwareDevice(passphrase: string): Promise<void> {
   assertWebAuthnAvailable();
   const vault = await loadVaultFromStorage();

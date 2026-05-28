@@ -17,9 +17,8 @@ export function SdkRegisterHardware({ onComplete }: SdkRegisterHardwareProps) {
       trustNotice={<SdkTrustNotice variant="compact" />}
       description={
         <>
-          Register a <strong className="text-white">YubiKey</strong>,{" "}
-          <strong className="text-white">Touch ID</strong>, or{" "}
-          <strong className="text-white">Windows Hello</strong> passkey. This
+          Register a <strong className="text-white">YubiKey</strong> or other
+          FIDO2 security key. Touch ID and Windows Hello are not supported. This
           confirms sensitive actions in the tab only — it does not move keys out
           of the browser like barkd mode.
         </>

@@ -31,8 +31,7 @@ export function UnlockGate() {
       <KeyRound className="text-cash-green mb-4" size={40} />
       <h1 className="text-2xl font-bold mb-2">Unlock wallet</h1>
       <p className="text-cash-muted text-sm mb-8 leading-relaxed">
-        Enter your passphrase, then confirm with your security key or passkey
-        (YubiKey, Touch ID, Windows Hello).
+        Enter your passphrase, then tap your YubiKey or FIDO2 security key.
       </p>
       <form onSubmit={handleSubmit} className="space-y-4">
         <label className="block">
@@ -47,7 +46,7 @@ export function UnlockGate() {
         </label>
         <p className="text-cash-muted text-xs flex items-center gap-2">
           <Fingerprint size={14} className="text-cash-green" />
-          You will be prompted for hardware after tapping Unlock
+          Insert your YubiKey when prompted after tapping Unlock
         </p>
         <ErrorBanner message={error} />
         <Button type="submit" className="w-full" disabled={loading}>
