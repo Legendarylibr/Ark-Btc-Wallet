@@ -12,6 +12,7 @@ import {
   SETUP_VAULT_PROOF_REQUIRED,
 } from "@/lib/webauthn/setup-gate";
 import { clientIp, rateLimit } from "@/lib/crypto/rate-limit";
+import { SECURITY_KEY_AUTHENTICATOR_SELECTION } from "@/lib/webauthn/security-key-policy";
 
 function vaultProofRequired(): NextResponse {
   return NextResponse.json(
@@ -64,8 +65,7 @@ export async function GET(req: NextRequest) {
       userDisplayName: "Ark Wallet",
       attestationType: "none",
       authenticatorSelection: {
-        residentKey: "preferred",
-        userVerification: "required",
+        ...SECURITY_KEY_AUTHENTICATOR_SELECTION,
       },
     });
 

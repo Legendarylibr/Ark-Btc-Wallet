@@ -20,6 +20,10 @@ import {
 import { encryptSecret } from "@/lib/crypto/vault";
 import { zeroize } from "@/lib/crypto/vault";
 import { assertWebAuthnAvailable } from "@/lib/webauthn/availability";
+import {
+  SECURITY_KEY_PASSKEY_SELECTION,
+  SECURITY_KEY_TRANSPORTS,
+} from "@/lib/webauthn/security-key-policy";
 import { getSdkWebAuthnConfig } from "./config";
 import { consumeSdkChallenge, storeSdkChallenge, sdkPasskeyOpChallenge } from "./challenges";
 import {
@@ -75,7 +79,11 @@ async function evaluatePrfWithCredential(
       challenge,
       rpId: getSdkWebAuthnConfig().rpID,
       allowCredentials: [
-        { id: base64urlToBuffer(credentialId), type: "public-key" },
+        {
+          id: base64urlToBuffer(credentialId),
+          type: "public-key",
+          transports: [...SECURITY_KEY_TRANSPORTS],
+        },
       ],
       userVerification: "required",
       extensions: prfEvalExtension(prfSalt),
@@ -118,7 +126,11 @@ async function verifyPasskeyPrfForOp(
       challenge,
       rpId: rpID,
       allowCredentials: [
-        { id: base64urlToBuffer(record.credentialId), type: "public-key" },
+        {
+          id: base64urlToBuffer(record.credentialId),
+          type: "public-key",
+          transports: [...SECURITY_KEY_TRANSPORTS],
+        },
       ],
       userVerification: "required",
       extensions: prfEvalExtension(prfSalt),
@@ -153,7 +165,7 @@ export async function createSdkWalletWithPasskey(
   assertWebAuthnAvailable();
   if (!(await isPrfSupported())) {
     throw new Error(
-      "Passkey PRF is not supported in this browser. Use recovery passphrase mode or try Chrome/Safari with Touch ID, Windows Hello, or a YubiKey 5.",
+      "Passkey PRF is not supported in this browser. Use recovery passphrase mode or a YubiKey 5 (FIDO2 security key).",
     );
   }
 
@@ -186,8 +198,7 @@ export async function createSdkWalletWithPasskey(
       },
       pubKeyCredParams: [{ alg: -7, type: "public-key" }],
       authenticatorSelection: {
-        userVerification: "required",
-        residentKey: "required",
+        ...SECURITY_KEY_PASSKEY_SELECTION,
       },
       extensions: prfEvalOnCreateExtension(prfSalt),
       timeout: 120_000,
@@ -206,7 +217,7 @@ export async function createSdkWalletWithPasskey(
 
   if (!prfOutput && !prfEnabledOnCreate(credential)) {
     throw new Error(
-      "This passkey does not support PRF. Try another authenticator (YubiKey 5, Touch ID, Windows Hello).",
+      "This security key does not support PRF. Use a YubiKey 5 or similar FIDO2 key.",
     );
   }
   if (!prfOutput) {

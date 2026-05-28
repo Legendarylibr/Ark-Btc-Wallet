@@ -65,7 +65,7 @@ export function SdkWalletApp() {
         <SdkTrustNotice />
         <p className="text-cash-muted text-sm mb-4 leading-relaxed">
           {passkeyCreate
-            ? "Passkey (PRF) encrypts your recovery phrase — unlock with Touch ID / YubiKey / Windows Hello."
+            ? "YubiKey passkey (PRF) encrypts your recovery phrase — Touch ID and Windows Hello are not supported."
             : "PRF not available here — wallet uses passphrase encryption (legacy SDK path)."}
         </p>
         {passkeyCreate ? (
@@ -102,7 +102,7 @@ export function SdkWalletApp() {
             </label>
             <ErrorBanner message={localError ?? store.error} />
             <Button type="submit" className="w-full" disabled={store.loading}>
-              {store.loading ? "Creating passkey…" : "Create wallet with passkey"}
+              {store.loading ? "Waiting for YubiKey…" : "Create wallet with YubiKey"}
             </Button>
             <button
               type="button"
@@ -194,7 +194,7 @@ export function SdkWalletApp() {
               }}
             >
               <Fingerprint size={18} className="mr-2 inline" />
-              {store.loading ? "Waiting for passkey…" : "Unlock with passkey"}
+              {store.loading ? "Waiting for YubiKey…" : "Unlock with YubiKey"}
             </Button>
             {store.hasRecoveryBackup && (
               <button

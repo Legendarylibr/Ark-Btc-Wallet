@@ -27,7 +27,7 @@ export function withReadCryptoGuard(
         return NextResponse.json(
           {
             error:
-              "Recent hardware confirmation required — use your security key",
+              "Recent hardware confirmation required — use your YubiKey",
             code: "HARDWARE_READ_REQUIRED",
           },
           { status: 401 },

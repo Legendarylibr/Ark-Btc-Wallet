@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
 
     if (!hasWebAuthnCredential(fingerprint)) {
       return NextResponse.json(
-        { error: "Register a hardware key or passkey first" },
+        { error: "Register a YubiKey or FIDO2 security key first" },
         { status: 403 },
       );
     }

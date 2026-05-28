@@ -135,7 +135,7 @@ export async function assertHardwareAuth(
     fingerprint,
     bodyText,
     opType,
-    "Hardware confirmation required — use your security key, YubiKey, or Touch ID",
+    "Hardware confirmation required — insert your YubiKey or FIDO2 security key",
     "This action expired or was already confirmed — start again from the app",
   );
 }
