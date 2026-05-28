@@ -23,7 +23,7 @@ def isReadCryptoPostPath (pathname : String) : Bool :=
 /-- Mirrors `pendingOpTypeForPath` in `pending-op-paths.ts`. -/
 def pendingOpTypeForPath (pathname search : String) : Option PendingOpType :=
   if pathname.endsWith "/send/estimate" then
-    some .send
+    none
   else if pathname.endsWith "/send" then
     some .send
   else if pathname.endsWith "/refresh" then

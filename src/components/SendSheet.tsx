@@ -300,16 +300,8 @@ export function SendSheet({
           )}
           <ErrorBanner message={error} className="text-center" />
           <p className="text-cash-muted text-xs text-center leading-relaxed px-2">
-            You will confirm on your security key or passkey:{" "}
-            <span className="text-white font-medium tabular-nums">
-              {amountSat.toLocaleString()} sats
-            </span>{" "}
-            to{" "}
-            <span className="font-mono text-white break-all">
-              {address.trim().length > 24
-                ? `${address.trim().slice(0, 20)}…`
-                : address.trim()}
-            </span>
+            One security-key or passkey prompt when you tap below — fee preview
+            above does not require a separate confirmation.
           </p>
           <Button
             className="w-full"

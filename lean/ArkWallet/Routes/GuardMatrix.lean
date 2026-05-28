@@ -61,8 +61,7 @@ def guardsFor : RouteId → RouteGuards
     { apiSecurity := true, sessionCookie := true, ed25519Verify := true,
       sensitiveCryptoGuard := true, webauthnHardware := true }
   | .walletSendEstimate =>
-    { apiSecurity := true, sessionCookie := true, ed25519Verify := true,
-      sensitiveCryptoGuard := true, webauthnHardware := true }
+    { apiSecurity := true, sessionCookie := true, ed25519Verify := true }
   | .walletRefresh =>
     { apiSecurity := true, sessionCookie := true, ed25519Verify := true,
       sensitiveCryptoGuard := true, webauthnHardware := true }

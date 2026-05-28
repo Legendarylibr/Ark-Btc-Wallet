@@ -30,7 +30,7 @@ export function RegisterHardware({ onComplete }: RegisterHardwareProps) {
           </li>
           <li className="flex gap-2">
             <Fingerprint size={14} className="shrink-0 mt-0.5 text-cash-green" />
-            Pay and Secure require a fresh hardware tap per action
+            Pay and Secure ask once per action (fee preview does not)
           </li>
           <li className="flex gap-2">
             <Fingerprint size={14} className="shrink-0 mt-0.5 text-cash-green" />

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withSensitiveCryptoGuard } from "@/lib/api-guard-sensitive";
+import { withCryptoGuard } from "@/lib/api-guard";
 import {
   BarkdError,
   barkd,
@@ -10,7 +10,7 @@ import { isValidArkAddress } from "@/lib/ark-address";
 import { parseJsonBody } from "@/lib/safe-json";
 import { safeApiError } from "@/lib/safe-error";
 
-const guarded = withSensitiveCryptoGuard(async (_req, bodyText) => {
+const guarded = withCryptoGuard(async (_req, bodyText) => {
   try {
     const parsed = parseJsonBody<{
       destination?: string;
@@ -35,8 +35,6 @@ const guarded = withSensitiveCryptoGuard(async (_req, bodyText) => {
         { status: 400 },
       );
     }
-
-    await barkd.sync();
 
     const [balance, arkInfo] = await Promise.all([
       barkd.balance(),
