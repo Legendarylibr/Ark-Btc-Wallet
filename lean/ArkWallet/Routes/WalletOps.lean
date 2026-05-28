@@ -19,7 +19,8 @@ def walletGuardKind (route : RouteId) : Option WalletGuardKind :=
   | .walletSync => some .readCrypto
   | .walletBalance | .walletHistory => some .readCrypto
   | .walletAddress => some .readCrypto
-  | .walletSend | .walletSendEstimate | .walletRefresh => some .sensitiveCrypto
+  | .walletSendEstimate => some .cryptoOnly
+  | .walletSend | .walletRefresh => some .sensitiveCrypto
   | _ => none
 
 def readRouteNeedsHardwareFresh (route : RouteId) (store : SessionStore) (sessionId : String)
@@ -31,7 +32,7 @@ def readRouteNeedsHardwareFresh (route : RouteId) (store : SessionStore) (sessio
 
 def sensitiveRouteNeedsPendingOp (route : RouteId) : Bool :=
   match route with
-  | .walletSend | .walletSendEstimate | .walletRefresh | .walletAddress => true
+  | .walletSend | .walletRefresh | .walletAddress => true
   | _ => false
 
 end ArkWallet.Routes

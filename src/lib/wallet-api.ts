@@ -96,7 +96,7 @@ async function walletApiWithReadAccess(
   return res;
 }
 
-/** Pay / Secure / rotate / estimate — hardware + operation binding */
+/** Pay / Secure / rotate — hardware + operation binding (estimate uses signed session only) */
 export async function walletApiWithHardware(
   path: string,
   init: RequestInit = {},

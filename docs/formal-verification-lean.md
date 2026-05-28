@@ -144,7 +144,8 @@ structure World where
 | `auth/logout` | `AuthFlows.Logout` | Session removed |
 | `auth/webauthn/*` | `Routes.SetupFlows` + `WebAuthn` | Gates per red-team uniform errors |
 | `wallet/balance`, `history`, `address` | `Routes.WalletOps.Read` | Session verify + hardware fresh |
-| `wallet/send`, `send/estimate`, `refresh` | `Routes.WalletOps.Write` | Pending op + hardware + session verify |
+| `wallet/send`, `refresh` | `Routes.WalletOps.Write` | Pending op + hardware + session verify |
+| `wallet/send/estimate` | `Routes.WalletOps` (crypto only) | Ed25519 session verify only (no hardware) |
 | `wallet/sync` | `Routes.WalletOps.Sync` | No balance leak (response enum) |
 | `health` | `Routes.Health` | Response only `{ok: daemon}` — no wallet bit |
 | `wallet/ready` (GET) | `Routes.Deprecated` | Always 410 |

@@ -55,7 +55,6 @@ const guarded = withSensitiveCryptoGuard(async (_req, bodyText) => {
       );
     }
 
-    await barkd.sync();
     const balanceNow = await barkd.balance();
     if (!canAffordSend(balanceNow.spendable_sat, amountSat, feeSat)) {
       return NextResponse.json(

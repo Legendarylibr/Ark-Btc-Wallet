@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import { pendingOpTypeForPath } from "@/lib/webauthn/pending-op-paths";
 
 describe("pendingOpTypeForPath", () => {
-  it("maps send estimate to send op with hardware", () => {
+  it("does not require hardware for send estimate (fee preview only)", () => {
     expect(
       pendingOpTypeForPath("/api/wallet/send/estimate", ""),
-    ).toBe("send");
+    ).toBeNull();
   });
 
   it("maps send to send op", () => {

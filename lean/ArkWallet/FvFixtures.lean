@@ -112,7 +112,7 @@ def pendingOp1_pathname : String := "/api/wallet/send/estimate"
 
 def pendingOp1_search : String := ""
 
-def pendingOp1_expected : Option String := some "send"
+def pendingOp1_expected : Option String := none
 
 def pendingOp2_pathname : String := "/api/wallet/address"
 

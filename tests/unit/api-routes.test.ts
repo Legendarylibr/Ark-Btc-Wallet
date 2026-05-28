@@ -24,7 +24,8 @@ vi.mock("@/lib/security/purge-ephemeral.server", () => ({
   purgeEphemeralServerData: vi.fn(),
 }));
 
-vi.mock("@/lib/barkd", () => {
+vi.mock("@/lib/barkd", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/barkd")>();
   class BarkdError extends Error {
     constructor(
       message: string,
@@ -35,23 +36,39 @@ vi.mock("@/lib/barkd", () => {
     }
   }
   return {
+    ...actual,
     BarkdError,
+    estimateArkSendFee: actual.estimateArkSendFee,
     barkd: {
       daemonReachable: vi.fn(async () => true),
       walletExists: vi.fn(async () => true),
       walletStatus: vi.fn(async () => ({ fingerprint: "fp-barkd-ready" })),
       balance: vi.fn(async () => mockBalance),
+      sync: vi.fn(async () => undefined),
+      arkInfo: vi.fn(async () => null),
+      sendArk: vi.fn(async () => ({ movement_id: "mov-1", message: null })),
     },
   };
 });
+
+/** Valid bech32m ark1… (see tests/unit/ark-address-utils.test.ts) */
+const VALID_ARK_DEST = "ark1qpzry9x8gf2tvdw0s3jn965jph";
 
 function clientBinding(): string {
   return hashClientBinding(apiRequest("/"));
 }
 
 describe("API route handlers", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    const { barkd } = await import("@/lib/barkd");
+    vi.mocked(barkd.daemonReachable).mockResolvedValue(true);
+    vi.mocked(barkd.walletExists).mockResolvedValue(true);
+    vi.mocked(barkd.walletStatus).mockResolvedValue({ fingerprint: "fp-barkd-ready" });
+    vi.mocked(barkd.balance).mockResolvedValue(mockBalance);
+    vi.mocked(barkd.sync).mockResolvedValue(undefined);
+    vi.mocked(barkd.arkInfo).mockResolvedValue(null);
+    vi.mocked(barkd.sendArk).mockResolvedValue({ movement_id: "mov-1", message: null });
   });
 
   afterEach(() => {
@@ -162,6 +179,74 @@ describe("API route handlers", () => {
     );
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual(mockBalance);
+  });
+
+  it("POST /api/wallet/send/estimate succeeds with Ed25519 only (no hardware)", async () => {
+    useTempWalletDataDir();
+    const { publicKey, privateKey } = await generateKeypair();
+    const publicKeyB64 = bytesToBase64(publicKey);
+    const session = createSession(
+      publicKeyB64,
+      "fp-barkd-ready",
+      clientBinding(),
+    );
+    const body = JSON.stringify({
+      destination: VALID_ARK_DEST,
+      amount_sat: 1000,
+    });
+    const headers = await buildSignedWalletHeaders({
+      method: "POST",
+      pathname: "/api/wallet/send/estimate",
+      body,
+      privateKey,
+      publicKeyB64,
+      sessionId: session.id,
+    });
+
+    const { POST } = await import("@/app/api/wallet/send/estimate/route");
+    const res = await POST(
+      apiRequest("/api/wallet/send/estimate", { method: "POST", headers, body }),
+    );
+    expect(res.status).toBe(200);
+    const json = (await res.json()) as {
+      affordable?: boolean;
+      fee_sat?: number;
+      amount_sat?: number;
+    };
+    expect(json.amount_sat).toBe(1000);
+    expect(json.affordable).toBe(true);
+    expect(typeof json.fee_sat).toBe("number");
+  });
+
+  it("POST /api/wallet/send requires hardware headers", async () => {
+    useTempWalletDataDir();
+    const { publicKey, privateKey } = await generateKeypair();
+    const publicKeyB64 = bytesToBase64(publicKey);
+    const session = createSession(
+      publicKeyB64,
+      "fp-barkd-ready",
+      clientBinding(),
+    );
+    const body = JSON.stringify({
+      destination: VALID_ARK_DEST,
+      amount_sat: 1000,
+    });
+    const headers = await buildSignedWalletHeaders({
+      method: "POST",
+      pathname: "/api/wallet/send",
+      body,
+      privateKey,
+      publicKeyB64,
+      sessionId: session.id,
+    });
+
+    const { POST } = await import("@/app/api/wallet/send/route");
+    const res = await POST(
+      apiRequest("/api/wallet/send", { method: "POST", headers, body }),
+    );
+    expect(res.status).toBe(401);
+    const json = (await res.json()) as { error?: string };
+    expect(json.error).toMatch(/hardware/i);
   });
 
   it("POST /api/auth/logout destroys session", async () => {

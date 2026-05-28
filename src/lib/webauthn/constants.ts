@@ -4,7 +4,6 @@ export const PENDING_OP_HEADER = "x-wallet-pending-op";
 
 export const HARDWARE_REQUIRED_PATHS = new Set([
   "/api/wallet/send",
-  "/api/wallet/send/estimate",
   "/api/wallet/refresh",
   "/api/wallet/address",
 ]);
