@@ -16,9 +16,13 @@ function formatTime(iso: string): string {
 
 interface ActivityFeedProps {
   movements: Movement[];
+  privacyMode?: boolean;
 }
 
-export function ActivityFeed({ movements }: ActivityFeedProps) {
+export function ActivityFeed({
+  movements,
+  privacyMode = false,
+}: ActivityFeedProps) {
   if (movements.length === 0) {
     return (
       <div className="px-6 py-12 text-center">
@@ -76,8 +80,9 @@ export function ActivityFeed({ movements }: ActivityFeedProps) {
                       incoming ? "text-cash-green" : "text-white"
                     }`}
                   >
-                    {incoming ? "+" : "−"}
-                    {amt.toLocaleString()}
+                    {privacyMode
+                      ? "••••"
+                      : `${incoming ? "+" : "−"}${amt.toLocaleString()}`}
                   </p>
                 ) : (
                   <p className="text-cash-muted text-sm">—</p>

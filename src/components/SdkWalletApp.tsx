@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useSdkWallet } from "@/hooks/useSdkWallet";
+import { usePrivacyMode } from "@/hooks/usePrivacyMode";
 import { Button } from "@/components/ui/Button";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { validatePassphrase } from "@/lib/passphrase";
@@ -15,7 +16,7 @@ import { SdkTrustNotice } from "@/components/SdkTrustNotice";
 import { SdkUpgradeBanner } from "@/components/SdkUpgradeBanner";
 import { MnemonicBackupBanner } from "@/components/MnemonicBackupBanner";
 import { SDK_MODE_LABEL } from "@/sdk/trust-model";
-import { Fingerprint, LogOut, RefreshCw, Shield } from "lucide-react";
+import { Eye, EyeOff, Fingerprint, LogOut, RefreshCw, Shield } from "lucide-react";
 import type { Balance } from "@/lib/barkd";
 
 function toDisplayBalance(b: {
@@ -48,6 +49,7 @@ export function SdkWalletApp() {
   const [usePassphraseCreate, setUsePassphraseCreate] = useState(false);
   const [dismissUpgrade, setDismissUpgrade] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const { privacyMode, togglePrivacyMode } = usePrivacyMode();
 
   if (!store.ready) {
     return (
@@ -294,6 +296,15 @@ export function SdkWalletApp() {
         <div className="flex gap-2">
           <button
             type="button"
+            title={privacyMode ? "Show private amounts" : "Hide private amounts"}
+            onClick={togglePrivacyMode}
+            className="h-9 w-9 rounded-full bg-cash-gray-2 flex items-center justify-center text-cash-muted"
+            aria-label={privacyMode ? "Show private amounts" : "Hide private amounts"}
+          >
+            {privacyMode ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
+          <button
+            type="button"
             title="Sync"
             onClick={() => void store.sync()}
             className="h-9 w-9 rounded-full bg-cash-gray-2 flex items-center justify-center text-cash-muted"
@@ -321,7 +332,7 @@ export function SdkWalletApp() {
 
       <ErrorBanner message={store.error} variant="banner" />
 
-      <BalanceHero balance={balance} connected />
+      <BalanceHero balance={balance} connected privacyMode={privacyMode} />
       <ActionButtons
         onSend={() => setSheet("send")}
         onReceive={() => setSheet("receive")}

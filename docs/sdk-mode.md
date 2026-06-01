@@ -58,14 +58,21 @@ barkd
 
 ## Network endpoints
 
-The default SDK config in `src/sdk/bark/load.ts` targets Second signet:
+The default SDK config targets Second signet:
 
 | Endpoint | Purpose |
 |----------|---------|
 | `https://ark.signet.2nd.dev` | Ark server |
 | `https://esplora.signet.2nd.dev` | Bitcoin signet chain source |
 
-Page CSP widens `connect-src` only when `NEXT_PUBLIC_WALLET_BACKEND=sdk`, so barkd mode keeps the narrower default policy.
+You can point SDK mode at trusted or self-hosted HTTPS endpoints:
+
+```bash
+NEXT_PUBLIC_ARK_SERVER=https://your-ark.example
+NEXT_PUBLIC_ESPLORA_URL=https://your-esplora.example
+```
+
+These values are public client-build settings. They are not secrets. Page CSP widens `connect-src` to the configured SDK endpoint origins only when `NEXT_PUBLIC_WALLET_BACKEND=sdk`, so barkd mode keeps the narrower default policy.
 
 ## Create a wallet
 
@@ -132,6 +139,26 @@ Practical implications:
 - Client-side WebAuthn is a local UX/security gate, not a server-verified authorization layer.
 - Browser extensions, injected scripts, and compromised profiles are in scope for the SDK threat model.
 - Use a dedicated browser profile for serious testing.
+
+## Privacy controls
+
+SDK mode can reduce public-chain linkage because Ark-to-Ark payments do not create a fresh Bitcoin transaction for every transfer. It does **not** make payments invisible. Boarding, exiting, refresh timing, amount patterns, and server-side metadata can still leak information.
+
+This app includes two practical privacy controls:
+
+| Control | What it helps with | Limit |
+|---------|--------------------|-------|
+| Screen privacy toggle | Hides balances and activity amounts from shoulder-surfing, streaming, and screenshots. | Does not change network or chain privacy. |
+| Configurable SDK endpoints | Lets you use trusted/self-hosted Ark and esplora endpoints instead of the default signet services. | The selected Ark server and chain source can still observe protocol/network metadata. |
+
+For better Ark privacy hygiene:
+
+- Avoid address reuse.
+- Use a dedicated browser profile for SDK wallets.
+- Prefer trusted or self-hosted infrastructure where possible.
+- Avoid combining unrelated activity in one wallet profile.
+- Treat board and exit transactions as public Bitcoin activity.
+- Do not assume amount splitting or timing alone provides anonymity.
 
 ## When to use SDK mode
 

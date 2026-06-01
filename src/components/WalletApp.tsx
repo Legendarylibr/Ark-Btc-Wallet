@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect } from "react";
 import { useWallet } from "@/hooks/useWallet";
+import { usePrivacyMode } from "@/hooks/usePrivacyMode";
 import { useCryptoStore } from "@/store/crypto";
 import { BalanceHero } from "@/components/BalanceHero";
 import { ActionButtons } from "@/components/ActionButtons";
@@ -17,6 +18,8 @@ import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import {
   Shield,
   Check,
+  Eye,
+  EyeOff,
   Loader2,
   AlertCircle,
   LogOut,
@@ -40,6 +43,7 @@ export function WalletApp() {
     refreshAll,
     secureFunds,
   } = useWallet();
+  const { privacyMode, togglePrivacyMode } = usePrivacyMode();
 
   const hasVault = useCryptoStore((s) => s.hasVault);
   const hardwareRegistered = useCryptoStore((s) => s.hardwareRegistered);
@@ -102,6 +106,15 @@ export function WalletApp() {
         <div className="flex items-center gap-2">
           <button
             type="button"
+            title={privacyMode ? "Show private amounts" : "Hide private amounts"}
+            onClick={togglePrivacyMode}
+            className="h-9 w-9 rounded-full bg-cash-gray-2 flex items-center justify-center text-cash-muted hover:text-white"
+            aria-label={privacyMode ? "Show private amounts" : "Hide private amounts"}
+          >
+            {privacyMode ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
+          <button
+            type="button"
             title="Refresh balance and activity"
             onClick={() => handleRefresh()}
             className="h-9 w-9 rounded-full bg-cash-gray-2 flex items-center justify-center text-cash-muted hover:text-white"
@@ -160,7 +173,11 @@ export function WalletApp() {
 
       <ErrorBanner message={error} variant="banner" />
 
-      <BalanceHero balance={balance} connected={connected} />
+      <BalanceHero
+        balance={balance}
+        connected={connected}
+        privacyMode={privacyMode}
+      />
       <ActionButtons
         onSend={() => setSheet("send")}
         onReceive={() => setSheet("receive")}
@@ -169,7 +186,7 @@ export function WalletApp() {
       />
 
       <div className="flex-1 border-t border-white/5 mt-2">
-        <ActivityFeed movements={history} />
+        <ActivityFeed movements={history} privacyMode={privacyMode} />
       </div>
 
       <SendSheet

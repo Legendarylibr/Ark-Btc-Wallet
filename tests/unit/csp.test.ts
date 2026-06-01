@@ -1,10 +1,14 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   API_CONTENT_SECURITY_POLICY,
   buildPageContentSecurityPolicy,
 } from "@/lib/security/csp";
 
 describe("content security policy", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it("page CSP uses nonce for scripts (no unsafe-inline in script-src)", () => {
     const csp = buildPageContentSecurityPolicy("test-nonce-abc");
     expect(csp).toContain("script-src 'self' 'nonce-test-nonce-abc' 'strict-dynamic'");
@@ -21,5 +25,17 @@ describe("content security policy", () => {
     expect(API_CONTENT_SECURITY_POLICY).toContain("default-src 'none'");
     expect(API_CONTENT_SECURITY_POLICY).toContain("script-src 'none'");
     expect(API_CONTENT_SECURITY_POLICY).toContain("script-src-attr 'none'");
+  });
+
+  it("SDK CSP allows configured HTTPS Ark endpoints", () => {
+    vi.stubEnv("NEXT_PUBLIC_WALLET_BACKEND", "sdk");
+    vi.stubEnv("NEXT_PUBLIC_ARK_SERVER", "https://ark.example.test/path");
+    vi.stubEnv("NEXT_PUBLIC_ESPLORA_URL", "https://esplora.example.test");
+
+    const csp = buildPageContentSecurityPolicy("test-nonce-abc");
+
+    expect(csp).toContain(
+      "connect-src 'self' https://ark.signet.2nd.dev https://esplora.signet.2nd.dev https://ark.example.test https://esplora.example.test",
+    );
   });
 });

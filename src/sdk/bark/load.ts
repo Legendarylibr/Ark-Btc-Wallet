@@ -1,5 +1,7 @@
 "use client";
 
+import { BARK_SIGNET } from "./config";
+
 export const BARK_WASM_BUILD_HINT =
   "Bark browser SDK failed to load. Run npm install to install @secondts/bark, then restart the dev server.";
 
@@ -63,7 +65,9 @@ export async function loadBarkWasm(): Promise<BarkWasmModule> {
   if (!modulePromise) {
     modulePromise = (async () => {
       try {
-        const mod = (await import("@secondts/bark/web")) as unknown as BarkWasmModule;
+        const mod = (await import(
+          "@secondts/bark/web"
+        )) as unknown as BarkWasmModule;
         if (typeof mod.default === "function") {
           await mod.default();
         }
@@ -79,8 +83,8 @@ export async function loadBarkWasm(): Promise<BarkWasmModule> {
 export function createSignetConfig(mod: BarkWasmModule): BarkConfig {
   void mod;
   return {
-    serverAddress: "https://ark.signet.2nd.dev",
-    esploraAddress: "https://esplora.signet.2nd.dev",
+    serverAddress: BARK_SIGNET.serverAddress,
+    esploraAddress: BARK_SIGNET.esploraAddress,
     network: "Signet",
     bitcoindAddress: undefined,
     bitcoindCookiefile: undefined,

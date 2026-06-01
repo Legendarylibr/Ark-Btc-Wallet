@@ -18,6 +18,8 @@ Copy [.env.example](../.env.example) to `.env.local` for local development.
 | `ALLOW_INSECURE_BARKD` | `false` | Signet/dev only: skip fatal when `BARKD_AUTH_TOKEN` is unset. |
 | `ARK_SERVER` | `https://ark.signet.2nd.dev` | Ark server (signet). |
 | `ESPLORA_URL` | `https://esplora.signet.2nd.dev` | Esplora (signet). |
+| `NEXT_PUBLIC_ARK_SERVER` | `https://ark.signet.2nd.dev` | Browser SDK Ark server. Public — baked into client bundle. HTTPS only. |
+| `NEXT_PUBLIC_ESPLORA_URL` | `https://esplora.signet.2nd.dev` | Browser SDK chain source. Public — baked into client bundle. HTTPS only. |
 | `BARK_NETWORK` | `signet` | Network label. |
 | `TRUST_PROXY` | `false` | If `true`, use `X-Forwarded-For` / `X-Real-IP` for rate limits and session binding. |
 | `ALLOW_REMOTE_HOST` | `false` | If `true`, disables loopback Host/Origin checks. **Fatal in production startup.** |
@@ -35,7 +37,8 @@ SDK mode ignores `BARKD_URL`, `BARKD_AUTH_HEADER`, and `BARKD_AUTH_TOKEN` for wa
 3. Restart `npm run dev`, or rebuild for production.
 4. Back up the SDK mnemonic shown during wallet creation.
 5. Use one browser origin consistently, preferably `http://127.0.0.1:3000`.
-6. For production, set `ALLOW_SDK_IN_PRODUCTION=true` only when browser-held wallet material is intentional.
+6. Optionally set `NEXT_PUBLIC_ARK_SERVER` and `NEXT_PUBLIC_ESPLORA_URL` to trusted/self-hosted HTTPS endpoints.
+7. For production, set `ALLOW_SDK_IN_PRODUCTION=true` only when browser-held wallet material is intentional.
 
 ## Production checklist
 

@@ -7,6 +7,7 @@ Guides for [Ark BTC Wallet](https://github.com/Legendarylibr/Ark-Btc-Wallet).
 | [Platforms](platforms.md) | Linux, macOS, and Windows requirements |
 | [Getting started](getting-started.md) | Install barkd, create a signet wallet, first unlock & payment |
 | [SDK mode](sdk-mode.md) | Barkd-free browser wallet, passkeys, recovery passphrase |
+| [Ark privacy](ark-privacy.md) | Ark privacy limits, screen privacy, trusted endpoint setup |
 | [Architecture](architecture.md) | How barkd vs SDK paths work; API and crypto layers |
 | [Configuration](configuration.md) | Environment variables and production checklist |
 | [Troubleshooting](troubleshooting.md) | Common errors and fixes |

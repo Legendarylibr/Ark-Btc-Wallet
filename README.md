@@ -13,6 +13,7 @@ A local, Cash App–style wallet for **Ark-only signet** payments. Send and rece
 
 - **Pay & Request** — send signet sats to any `ark1…` address; show a receive address for incoming payments
 - **Live balance & history** — auto-sync through barkd or the browser SDK; activity list in the UI
+- **Privacy helpers** — hide on-screen amounts and point SDK mode at trusted/self-hosted Ark infrastructure
 - **Secure** — refresh received VTXOs after someone pays you (recommended after incoming funds)
 - **Strong local security (barkd mode)** — passphrase + security key (Touch ID, Windows Hello, YubiKey) + signed API on loopback only
 - **No cloud account** — runs on your machine at `http://127.0.0.1:3000`; keys stay in barkd unless you enable SDK mode
@@ -202,6 +203,7 @@ Full list: [docs/troubleshooting.md](docs/troubleshooting.md)
 | [docs/getting-started.md](docs/getting-started.md) | Full barkd walkthrough, Pay / Secure details |
 | [docs/platforms.md](docs/platforms.md) | OS-specific tips, WebAuthn, WSL |
 | [docs/sdk-mode.md](docs/sdk-mode.md) | Barkd-free browser wallet, passkeys, recovery passphrase |
+| [docs/ark-privacy.md](docs/ark-privacy.md) | Ark privacy limits, screen privacy, trusted endpoint setup |
 | [docs/configuration.md](docs/configuration.md) | All environment variables |
 | [docs/architecture.md](docs/architecture.md) | How signing and backends fit together |
 | [docs/troubleshooting.md](docs/troubleshooting.md) | Errors and fixes |

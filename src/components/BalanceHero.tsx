@@ -7,9 +7,14 @@ import type { Balance } from "@/lib/barkd";
 interface BalanceHeroProps {
   balance: Balance | null;
   connected: boolean;
+  privacyMode?: boolean;
 }
 
-export function BalanceHero({ balance, connected }: BalanceHeroProps) {
+export function BalanceHero({
+  balance,
+  connected,
+  privacyMode = false,
+}: BalanceHeroProps) {
   const sats = balance?.spendable_sat ?? 0;
   const pending =
     (balance?.pending_in_round_sat ?? 0) +
@@ -27,16 +32,16 @@ export function BalanceHero({ balance, connected }: BalanceHeroProps) {
         className="flex items-baseline justify-center gap-1"
       >
         <span className="text-5xl font-bold tracking-tight tabular-nums">
-          {satsToBtcDisplay(sats)}
+          {privacyMode ? "••••••••" : satsToBtcDisplay(sats)}
         </span>
         <span className="text-2xl font-semibold text-cash-muted mb-1">BTC</span>
       </motion.div>
       <p className="text-cash-muted text-sm mt-2 tabular-nums">
-        {sats.toLocaleString()} sats
+        {privacyMode ? "hidden" : `${sats.toLocaleString()} sats`}
       </p>
       {pending > 0 && (
         <p className="text-amber-400/90 text-xs mt-2">
-          +{pending.toLocaleString()} sats pending
+          {privacyMode ? "Pending amount hidden" : `+${pending.toLocaleString()} sats pending`}
         </p>
       )}
       <div className="flex items-center justify-center gap-2 mt-4">
