@@ -45,8 +45,7 @@ Copy [.env.example](../.env.example) to `.env.local` for local development.
 | `npm run start` | Production server on `127.0.0.1`. |
 | `npm test` | Vitest unit tests. |
 | `npm run lint` | ESLint on `src/`. |
-| `npm run vendor:bark-wasm` | Clone Bark WASM bindings (Node; Linux/macOS/Windows). |
-| `npm run build:bark-wasm` | `wasm-pack` build for SDK mode. |
+| `npm install` | Install app dependencies, including Second's browser Bark SDK (`@secondts/bark`). |
 | `npm run lockdown:local` | Print firewall / port-check hints for your OS. |
 
 ## Data directories

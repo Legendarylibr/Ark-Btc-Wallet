@@ -1,42 +1,58 @@
 "use client";
 
 export const BARK_WASM_BUILD_HINT =
-  "Bark WASM is not built. Run: npm run vendor:bark-wasm && npm run build:bark-wasm (needs Rust + wasm-pack).";
+  "Bark browser SDK failed to load. Run npm install to install @secondts/bark, then restart the dev server.";
 
 type BarkWasmModule = {
-  default: () => Promise<void>;
+  default?: () => Promise<void>;
   generateMnemonic: () => string;
   validateMnemonic: (m: string) => boolean;
   validateArkAddress: (a: string) => boolean;
-  Config: {
-    create: (opts: Record<string, unknown>) => unknown;
-  };
-  Network: { Signet: unknown };
   Wallet: {
-    create: (
-      mnemonic: string,
-      config: unknown,
-      datadir: string,
-      forceRescan: boolean,
-    ) => Promise<WalletLike>;
-    open: (
-      mnemonic: string,
-      config: unknown,
-      datadir: string,
-    ) => Promise<WalletLike>;
+    create: (args: {
+      mnemonic: string;
+      config: BarkConfig;
+      dbName: string;
+      forceRescan: boolean;
+    }) => Promise<WalletLike>;
+    open: (args: {
+      mnemonic: string;
+      config: BarkConfig;
+      dbName: string;
+    }) => Promise<WalletLike>;
   };
+};
+
+type BarkConfig = {
+  serverAddress: string;
+  serverAccessToken?: string;
+  esploraAddress?: string;
+  bitcoindAddress?: string;
+  bitcoindCookiefile?: string;
+  bitcoindUser?: string;
+  bitcoindPass?: string;
+  network: "Bitcoin" | "Testnet" | "Signet" | "Regtest";
+  vtxoRefreshExpiryThreshold?: number;
+  vtxoExitMargin?: number;
+  htlcRecvClaimDelta?: number;
+  fallbackFeeRate?: number;
+  roundTxRequiredConfirmations?: number;
+  daemonSyncIntervalSecs?: number;
+  offboardRequiredConfirmations?: number;
+  daemonManualSync?: boolean;
+  lightningReceiveClaimRetries?: number;
 };
 
 type WalletLike = {
   sync(): Promise<void>;
   balance(): Promise<{
-    spendableSats: bigint;
-    pendingLightningSendSats?: bigint;
-    claimableLightningReceiveSats?: bigint;
+    spendableSats: number;
+    pendingLightningSendSats?: number;
+    claimableLightningReceiveSats?: number;
   }>;
   newAddress(): Promise<string>;
-  sendArkoorPayment(address: string, amountSats: bigint): Promise<unknown>;
-  arkInfo?(): { feeScheduleJson?: string } | null | undefined;
+  sendArkoorPayment(address: string, amountSats: number): Promise<unknown>;
+  arkInfo?(): Promise<{ feeScheduleJson?: string } | null | undefined>;
   refreshVtxos?(vtxoIds: string[]): Promise<unknown>;
   [key: string]: unknown;
 };
@@ -47,9 +63,7 @@ export async function loadBarkWasm(): Promise<BarkWasmModule> {
   if (!modulePromise) {
     modulePromise = (async () => {
       try {
-        const mod = (await import(
-          "@secondts/bark-wasm"
-        )) as BarkWasmModule & { default?: () => Promise<void> };
+        const mod = (await import("@secondts/bark/web")) as unknown as BarkWasmModule;
         if (typeof mod.default === "function") {
           await mod.default();
         }
@@ -62,11 +76,12 @@ export async function loadBarkWasm(): Promise<BarkWasmModule> {
   return modulePromise;
 }
 
-export function createSignetConfig(mod: BarkWasmModule): unknown {
-  return mod.Config.create({
+export function createSignetConfig(mod: BarkWasmModule): BarkConfig {
+  void mod;
+  return {
     serverAddress: "https://ark.signet.2nd.dev",
     esploraAddress: "https://esplora.signet.2nd.dev",
-    network: mod.Network.Signet,
+    network: "Signet",
     bitcoindAddress: undefined,
     bitcoindCookiefile: undefined,
     bitcoindUser: undefined,
@@ -76,9 +91,8 @@ export function createSignetConfig(mod: BarkWasmModule): unknown {
     htlcRecvClaimDelta: undefined,
     fallbackFeeRate: undefined,
     roundTxRequiredConfirmations: undefined,
-    daemonFastSyncIntervalSecs: undefined,
-    daemonSlowSyncIntervalSecs: undefined,
-  });
+    daemonSyncIntervalSecs: undefined,
+  } satisfies BarkConfig;
 }
 
 export type { WalletLike };

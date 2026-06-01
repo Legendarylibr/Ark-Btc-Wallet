@@ -8,17 +8,15 @@ Enable in `.env.local`:
 NEXT_PUBLIC_WALLET_BACKEND=sdk
 ```
 
-## Build WASM (one-time)
+## Install SDK
 
-Requires **Rust**, **wasm-pack**, and **Git** (all platforms — see [platforms.md](platforms.md)):
+The browser SDK is installed from npm:
 
 ```bash
-npm run vendor:bark-wasm   # Node script — clones bindings (no Bash required)
-npm run build:bark-wasm    # wasm-pack → packages/bark-wasm/pkg/
 npm install
 ```
 
-Without a built package, Next.js aliases `@secondts/bark-wasm` to a **stub** — the UI loads but cannot sync or send on chain.
+This installs Second's `@secondts/bark` package, which ships the browser WASM build. No local Rust or `wasm-pack` build is required for normal app development.
 
 Then:
 
@@ -63,7 +61,7 @@ The app shows an in-tab notice: keys are in the browser, not barkd. Malware or X
 
 ## Signet endpoints
 
-The app connects to Ark signet over HTTPS (`ark.signet.2nd.dev`, `esplora.signet.2nd.dev`). CSP `connect-src` is widened only in SDK mode (`next.config.ts`).
+The app connects to Ark signet over HTTPS (`ark.signet.2nd.dev`, `esplora.signet.2nd.dev`). CSP `connect-src` is widened only in SDK mode.
 
 ## When to use SDK mode
 
