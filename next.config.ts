@@ -1,6 +1,4 @@
 import type { NextConfig } from "next";
-import fs from "node:fs";
-import path from "node:path";
 
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -50,24 +48,11 @@ if (process.env.ENABLE_HSTS === "true") {
   });
 }
 
-const barkWasmBundler = path.join(
-  process.cwd(),
-  "packages/bark-wasm/pkg/bundler/bark.js",
-);
-const hasBarkWasmBuild = fs.existsSync(barkWasmBundler);
-const barkWasmStub = path.join(process.cwd(), "src/sdk/bark/wasm-stub.ts");
-
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  transpilePackages: hasBarkWasmBuild ? ["@secondts/bark-wasm"] : [],
+  transpilePackages: ["@secondts/bark"],
   webpack: (config, { isServer }) => {
-    if (!hasBarkWasmBuild) {
-      config.resolve ??= {};
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        "@secondts/bark-wasm": barkWasmStub,
-      };
-    } else if (!isServer) {
+    if (!isServer) {
       config.experiments = {
         ...config.experiments,
         asyncWebAssembly: true,

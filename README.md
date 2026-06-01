@@ -160,7 +160,7 @@ More detail: [docs/platforms.md](docs/platforms.md)
 
 For a browser-only wallet (mnemonic in the app, passkey unlock):
 
-1. Build WASM: [docs/sdk-mode.md](docs/sdk-mode.md) (`npm run vendor:bark-wasm` and `npm run build:bark-wasm`).
+1. Install dependencies: `npm install` includes Second's browser Bark SDK (`@secondts/bark`).
 2. In `.env.local` set `NEXT_PUBLIC_WALLET_BACKEND=sdk`.
 3. Restart `npm run dev`.
 

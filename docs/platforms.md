@@ -9,7 +9,7 @@ Ark BTC Wallet is a **Node.js + browser** app. The UI and API run on all three p
 | Node.js | 20+ | Dev server, build, tests |
 | npm | 9+ | Dependencies |
 | Modern browser | Chrome, Edge, Firefox, Safari | WebAuthn + UI |
-| Git | any recent | SDK `vendor:bark-wasm` only |
+| Git | any recent | Cloning the repository |
 
 ## Quick start (any OS)
 
@@ -42,14 +42,7 @@ barkd
 
 ## SDK / WASM (optional, all platforms)
 
-Requires **Rust** ([rustup.rs](https://rustup.rs)) and **wasm-pack** ([installer](https://rustwasm.github.io/wasm-pack/installer/)).
-
-```bash
-npm run vendor:bark-wasm
-npm run build:bark-wasm
-```
-
-These use TypeScript scripts (`scripts/*.ts`, run with `tsx`) — no Bash required.
+SDK mode uses Second's published browser WASM package, `@secondts/bark`, installed by `npm install`. You do not need Rust or `wasm-pack` unless you are developing the Bark bindings themselves.
 
 ## WebAuthn / passkeys
 
@@ -87,6 +80,6 @@ GitHub Actions runs **lint**, **test**, and **build** on Ubuntu, Windows, and ma
 
 - **“barkd not reachable” on Windows + WSL** — run `barkd` in WSL; keep `BARKD_URL=http://127.0.0.1:3535`.
 - **WebAuthn fails after switching host** — stay on `127.0.0.1:3000` or `localhost:3000`, not both across sessions.
-- **Scripts fail on Windows** — use Node 20+ from [nodejs.org](https://nodejs.org); run `npm run vendor:bark-wasm` etc. (TypeScript via `tsx`).
+- **Scripts fail on Windows** — use Node 20+ from [nodejs.org](https://nodejs.org); project scripts run through npm and TypeScript via `tsx`.
 
 See [troubleshooting.md](troubleshooting.md) for more.

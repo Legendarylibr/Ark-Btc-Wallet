@@ -49,13 +49,11 @@ Balance must cover amount + estimated Ark fees. Tap **Secure** after receives; s
 
 ## SDK mode
 
-### WASM stub / sync fails
+### SDK package / sync fails
 
-Build the package:
+Install the package:
 
 ```bash
-npm run vendor:bark-wasm
-npm run build:bark-wasm
 npm install
 ```
 

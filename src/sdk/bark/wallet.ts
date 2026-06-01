@@ -11,16 +11,14 @@ import {
 import type { SdkBalance, SdkSendEstimate, SdkWalletHandle } from "./types";
 
 function toBalance(b: {
-  spendableSats: bigint;
-  pendingLightningSendSats?: bigint;
-  claimableLightningReceiveSats?: bigint;
+  spendableSats: number;
+  pendingLightningSendSats?: number;
+  claimableLightningReceiveSats?: number;
 }): SdkBalance {
   return {
-    spendableSats: Number(b.spendableSats),
-    pendingLightningSendSats: Number(b.pendingLightningSendSats ?? BigInt(0)),
-    claimableLightningReceiveSats: Number(
-      b.claimableLightningReceiveSats ?? BigInt(0),
-    ),
+    spendableSats: b.spendableSats,
+    pendingLightningSendSats: b.pendingLightningSendSats ?? 0,
+    claimableLightningReceiveSats: b.claimableLightningReceiveSats ?? 0,
   };
 }
 
@@ -39,7 +37,7 @@ function wrapWallet(inner: WalletLike): SdkWalletHandle {
       const balance = await this.balance();
       let feeScheduleJson: string | undefined;
       if (typeof inner.arkInfo === "function") {
-        const info = inner.arkInfo();
+        const info = await inner.arkInfo();
         feeScheduleJson = info?.feeScheduleJson;
       }
       const feeSat = sdkEstimateArkSendFee(amountSat, feeScheduleJson);
@@ -57,7 +55,7 @@ function wrapWallet(inner: WalletLike): SdkWalletHandle {
       } satisfies SdkSendEstimate;
     },
     async sendArk(destination, amountSat) {
-      await inner.sendArkoorPayment(destination, BigInt(amountSat));
+      await inner.sendArkoorPayment(destination, amountSat);
     },
     async refreshReceived() {
       if (typeof inner.refreshVtxos === "function") {
@@ -83,22 +81,22 @@ export async function validateSdkMnemonic(mnemonic: string): Promise<boolean> {
 export async function createSdkWallet(mnemonic: string): Promise<SdkWalletHandle> {
   const mod = await loadBarkWasm();
   const config = createSignetConfig(mod);
-  const inner = await mod.Wallet.create(
+  const inner = await mod.Wallet.create({
     mnemonic,
     config,
-    BARK_BROWSER_DATADIR,
-    false,
-  );
+    dbName: BARK_BROWSER_DATADIR,
+    forceRescan: false,
+  });
   return wrapWallet(inner);
 }
 
 export async function openSdkWallet(mnemonic: string): Promise<SdkWalletHandle> {
   const mod = await loadBarkWasm();
   const config = createSignetConfig(mod);
-  const inner = await mod.Wallet.open(
+  const inner = await mod.Wallet.open({
     mnemonic,
     config,
-    BARK_BROWSER_DATADIR,
-  );
+    dbName: BARK_BROWSER_DATADIR,
+  });
   return wrapWallet(inner);
 }
