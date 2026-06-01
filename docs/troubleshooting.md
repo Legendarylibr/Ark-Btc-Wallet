@@ -59,6 +59,16 @@ npm install
 
 Restart `npm run dev` with `NEXT_PUBLIC_WALLET_BACKEND=sdk`.
 
+### App still asks for barkd in SDK mode
+
+- Confirm `.env.local` contains exactly `NEXT_PUBLIC_WALLET_BACKEND=sdk`.
+- Restart the dev server after changing `.env.local`; this flag is baked into the client bundle.
+- Check the terminal for `SDK browser-wallet mode` during startup.
+
+### SDK mode has no local daemon, but still cannot sync
+
+SDK mode does not use `barkd`, but it still needs browser HTTPS access to the configured Ark server and esplora. Check that `https://ark.signet.2nd.dev` and `https://esplora.signet.2nd.dev` are reachable from the browser/network.
+
 ### “Passkey PRF is not supported”
 
 Use passphrase-only path or a PRF-capable authenticator (YubiKey 5, Touch ID, Windows Hello). Chrome/Safari current versions recommended.

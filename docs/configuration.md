@@ -6,7 +6,7 @@ Copy [.env.example](../.env.example) to `.env.local` for local development.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `NEXT_PUBLIC_WALLET_BACKEND` | `barkd` | `barkd` (recommended) or `sdk` (browser WASM). Public — baked into client bundle. |
+| `NEXT_PUBLIC_WALLET_BACKEND` | `barkd` | `barkd` (recommended) or `sdk` (barkd-free browser WASM). Public — baked into client bundle. |
 | `ALLOW_SDK_IN_PRODUCTION` | `false` | Must be `true` to run `npm run start` with SDK backend in production. |
 | `BARKD_URL` | `http://127.0.0.1:3535` | barkd REST base URL. **Must be loopback** — enforced at runtime. |
 | `SESSION_SECRET` | — | **Required in production** (≥32 random chars). Encrypts `.ark-wallet-data/*`. |
@@ -25,6 +25,17 @@ Copy [.env.example](../.env.example) to `.env.local` for local development.
 | `ARK_ZERO_RETENTION` | `false` | Short server TTLs; purge ephemeral `.ark-wallet-data` on startup and logout. |
 | `ZERO_DATA_RETENTION` | `false` | Alias for `ARK_ZERO_RETENTION`. |
 | `NEXT_PUBLIC_ARK_ZERO_RETENTION` | `false` | Clear browser caches / SDK sessionStorage on lock (client build flag). |
+
+## SDK mode checklist
+
+SDK mode ignores `BARKD_URL`, `BARKD_AUTH_HEADER`, and `BARKD_AUTH_TOKEN` for wallet operations. It still uses the Next.js app process for the UI and connects from the browser to the Ark server and esplora.
+
+1. Set `NEXT_PUBLIC_WALLET_BACKEND=sdk`.
+2. Run `npm install` so `@secondts/bark` is present.
+3. Restart `npm run dev`, or rebuild for production.
+4. Back up the SDK mnemonic shown during wallet creation.
+5. Use one browser origin consistently, preferably `http://127.0.0.1:3000`.
+6. For production, set `ALLOW_SDK_IN_PRODUCTION=true` only when browser-held wallet material is intentional.
 
 ## Production checklist
 

@@ -1,6 +1,6 @@
 # Linux, macOS, and Windows
 
-Ark BTC Wallet is a **Node.js + browser** app. The UI and API run on all three platforms; **barkd** is installed separately per OS.
+Ark BTC Wallet is a **Node.js + browser** app. The UI runs on all three platforms. In barkd mode, **barkd** is installed separately per OS; in SDK mode, Bark runs in the browser through `@secondts/bark` and no local daemon is required.
 
 ## Requirements (all platforms)
 
@@ -25,7 +25,7 @@ Works in **PowerShell**, **cmd**, **Git Bash** (Windows), and Unix shells.
 
 ## barkd by platform
 
-Install from [Bark / barkd docs](https://second.tech/docs/barkd/install) for your OS.
+Install from [Bark / barkd docs](https://second.tech/docs/barkd/install) for your OS when using the default barkd mode. Skip this section for SDK mode.
 
 | Platform | Notes |
 |----------|--------|
@@ -40,9 +40,15 @@ bark create --signet --ark ark.signet.2nd.dev --esplora esplora.signet.2nd.dev
 barkd
 ```
 
-## SDK / WASM (optional, all platforms)
+## SDK / WASM (barkd-free, all platforms)
 
-SDK mode uses Second's published browser WASM package, `@secondts/bark`, installed by `npm install`. You do not need Rust or `wasm-pack` unless you are developing the Bark bindings themselves.
+SDK mode uses Second's published browser WASM package, `@secondts/bark`, installed by `npm install`. You do not need Rust, `wasm-pack`, Bark CLI, or `barkd` unless you are developing the Bark bindings themselves or using barkd mode.
+
+Set this in `.env.local` and restart the dev server:
+
+```bash
+NEXT_PUBLIC_WALLET_BACKEND=sdk
+```
 
 ## WebAuthn / passkeys
 
@@ -59,8 +65,8 @@ Use **Chrome**, **Edge**, or **Firefox** on Linux for best WebAuthn support.
 | Data | Location |
 |------|----------|
 | App server state | `.ark-wallet-data/` in project dir (or `WALLET_DATA_DIR`) |
-| barkd wallet | `~/.bark` (OS user home) |
-| Browser vault | IndexedDB in your browser profile |
+| barkd wallet | `~/.bark` (OS user home; barkd mode only) |
+| Browser vault | IndexedDB in your browser profile; SDK mode stores mnemonic/passkey vaults here |
 
 On Windows, `path.join` and Node `fs` handle paths; `.ark-wallet-data` lives next to the repo.
 

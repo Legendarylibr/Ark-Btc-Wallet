@@ -10,18 +10,22 @@ Operator setup and env vars: [docs/configuration.md](docs/configuration.md). Use
 2. **This app** — Ed25519-signed proxy to barkd. Passphrase encrypts the **UI signing key** in IndexedDB.
 3. **Your OS** — root of trust.
 
-### SDK mode
+### SDK mode (barkd-free)
 
-Enable with `NEXT_PUBLIC_WALLET_BACKEND=sdk`. **Blocked in production** unless `ALLOW_SDK_IN_PRODUCTION=true`. **Do not assume barkd-mode guarantees apply.**
+Enable with `NEXT_PUBLIC_WALLET_BACKEND=sdk`. This runs Bark in the browser through `@secondts/bark` WASM and does not start or call a local `barkd` process. **Blocked in production** unless `ALLOW_SDK_IN_PRODUCTION=true`. **Do not assume barkd-mode guarantees apply.**
 
 | Topic | barkd | SDK |
 |-------|-------|-----|
 | Keys | barkd process | Browser (WASM + IndexedDB) |
 | Mnemonic in UI | No | Yes |
 | WebAuthn | Server-verified | Client-only |
+| Local daemon bypass | Possible through `127.0.0.1:3535` | Not applicable |
+| Hosted dependency | Ark server + chain source | Ark server + chain source |
 | Typical bypass | Direct `:3535` HTTP | XSS / malware while unlocked |
 
 Passkey (PRF) mode requires a **recovery passphrase** at create. Pay / Secure / rotate need a fresh passkey tap. Legacy passphrase path uses confirm-on-pay WebAuthn only.
+
+SDK mode is best understood as a browser hot wallet. It avoids the local barkd HTTP bypass, but it moves the signing runtime and wallet material into the browser profile. Treat browser extensions, injected scripts, malicious local software, and compromised profiles as high-impact risks while unlocked.
 
 ## Production requirements
 
@@ -31,6 +35,7 @@ Passkey (PRF) mode requires a **recovery passphrase** at create. Pay / Secure / 
 | `SESSION_SECRET` | ≥32 random characters |
 | `npm run dev` / `start` | Binds **127.0.0.1** |
 | barkd | Listen on loopback — never `0.0.0.0:3535` |
+| SDK production | Requires explicit `ALLOW_SDK_IN_PRODUCTION=true` |
 
 **Never enable:** `ALLOW_REMOTE_HOST=true` in production (startup aborts). Do not expose ports **3000** or **3535** to the LAN/internet.
 
@@ -65,6 +70,17 @@ Passkey (PRF) mode requires a **recovery passphrase** at create. Pay / Secure / 
 - No logging of request bodies, passphrases, or mnemonics
 
 Hardware gates the **web UI**, not barkd itself — **`BARKD_AUTH_TOKEN` is required in production** (barkd mode) unless `ALLOW_INSECURE_BARKD=true` for signet-only dev.
+
+## In-app controls (SDK)
+
+- `@secondts/bark/web` is dynamically imported only in SDK mode.
+- Wallet state and mnemonic vaults are stored in browser IndexedDB; the active WASM handle is kept outside Zustand snapshots.
+- Passkey PRF mode encrypts the mnemonic vault with a PRF-derived key and requires a recovery passphrase backup.
+- Passphrase fallback encrypts the mnemonic vault with the user's recovery passphrase.
+- Pay / Secure / rotate use a fresh client-side WebAuthn operation challenge bound to the intended operation body.
+- `SecuritySentinel` locks SDK mode on tab hide / blur / `pagehide`, rejects embedded contexts, and clears transient SDK pending-operation state when zero-retention is enabled.
+- SDK mode uses direct HTTPS connections to the configured Ark server and esplora; no `/api/wallet/*` route should be needed for wallet operations.
+- CSP widens `connect-src` for the SDK signet endpoints only when `NEXT_PUBLIC_WALLET_BACKEND=sdk`.
 
 ## barkd bypass (out of scope for this app)
 

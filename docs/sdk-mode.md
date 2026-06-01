@@ -1,34 +1,77 @@
-# SDK mode (browser wallet)
+# SDK mode (barkd-free browser wallet)
 
-SDK mode runs **Bark WASM** in the tab. Keys and VTXO state live in the browser (IndexedDB + WASM datadir). **This is not equivalent to barkd mode** — see [SECURITY.md](../SECURITY.md).
+SDK mode runs Bark directly in the browser through Second's `@secondts/bark` WASM package. It removes the need for a local `barkd` daemon, so the browser owns the wallet lifecycle: mnemonic generation, encrypted storage, sync, balance, address rotation, send, and VTXO refresh.
 
-Enable in `.env.local`:
+This is a **barkd-free** mode, not an offline mode. The browser still connects to the configured Ark server and chain source over HTTPS.
+
+| Local component | barkd mode | SDK mode |
+|-----------------|------------|----------|
+| `barkd` process | Required | Not used |
+| Bark CLI wallet datadir | `~/.bark` | Not used by this app |
+| Wallet secret storage | barkd | Browser IndexedDB |
+| Signing runtime | barkd process | WASM in the tab |
+| App wallet API routes | Used | Not used for wallet ops |
+| Hosted signet services | Ark server + esplora | Ark server + esplora |
+
+**This is not equivalent to barkd mode** — see [SECURITY.md](../SECURITY.md).
+
+## Quick start
+
+Create `.env.local`:
 
 ```bash
 NEXT_PUBLIC_WALLET_BACKEND=sdk
 ```
 
-## Install SDK
-
-The browser SDK is installed from npm:
+Install and run:
 
 ```bash
 npm install
+npm run dev
 ```
 
 This installs Second's `@secondts/bark` package, which ships the browser WASM build. No local Rust or `wasm-pack` build is required for normal app development.
 
-Then:
+Open:
+
+```bash
+http://127.0.0.1:3000
+```
+
+Use one origin consistently (`127.0.0.1` or `localhost`) because WebAuthn passkeys are bound to the relying-party ID.
+
+## What still runs locally
+
+SDK mode still uses the Next.js app as the UI shell, security sentinel, CSP boundary, and static asset server. It does **not** use the Next.js `/api/wallet/*` routes for balance, sync, send, or address creation; those operations happen in the browser through the SDK.
+
+You still run:
 
 ```bash
 npm run dev
 ```
 
-No `barkd` process is required.
+You do **not** run:
+
+```bash
+barkd
+```
+
+## Network endpoints
+
+The default SDK config in `src/sdk/bark/load.ts` targets Second signet:
+
+| Endpoint | Purpose |
+|----------|---------|
+| `https://ark.signet.2nd.dev` | Ark server |
+| `https://esplora.signet.2nd.dev` | Bitcoin signet chain source |
+
+Page CSP widens `connect-src` only when `NEXT_PUBLIC_WALLET_BACKEND=sdk`, so barkd mode keeps the narrower default policy.
 
 ## Create a wallet
 
-The app generates a **BIP39 mnemonic** and shows it **once**. Store it offline.
+The app generates a **BIP39 mnemonic** in the browser and shows it **once**. Store it offline before funding the wallet. This mnemonic is the recovery material for SDK mode.
+
+The SDK wallet state lives in browser storage. Clearing site data, changing browser profiles, or moving to another device can make the in-browser wallet unavailable unless you have the mnemonic or recovery passphrase path described below.
 
 ### Passkey path (recommended when PRF is supported)
 
@@ -47,6 +90,17 @@ If PRF is unavailable:
 1. Passphrase encrypts the mnemonic in IndexedDB.
 2. Register a hardware key for **confirm-on-pay** (client-side WebAuthn only — not server-verified).
 
+## User flow
+
+1. Open the app in SDK mode.
+2. Create or unlock the browser wallet.
+3. Back up the mnemonic when shown.
+4. Tap **Request** to create an `ark1...` address.
+5. Fund it from the signet faucet.
+6. Tap **Pay** to send Ark payments.
+7. Tap **Secure** after receiving funds to refresh received VTXOs.
+8. Tap **Lock** when done.
+
 ## Recovery
 
 | Situation | Action |
@@ -54,18 +108,46 @@ If PRF is unavailable:
 | Lost passkey, have recovery passphrase | Unlock with recovery passphrase on the SDK unlock screen. |
 | Lost passkey and recovery passphrase | Funds may be unrecoverable from this app — treat like any hot wallet without backup. |
 | Upgrade passphrase → passkey | Use in-app upgrade after unlocking with passphrase. |
+| Cleared browser data, have mnemonic | Recreate/import through the SDK recovery flow when available; otherwise use the mnemonic with compatible Bark tooling. |
+
+## Production flag
+
+SDK mode is blocked in `NODE_ENV=production` unless you explicitly opt in:
+
+```bash
+NEXT_PUBLIC_WALLET_BACKEND=sdk
+ALLOW_SDK_IN_PRODUCTION=true
+```
+
+This guard exists because production SDK mode stores wallet material in the browser. Only enable it for deployments where that is the intended product model.
 
 ## Trust notice
 
 The app shows an in-tab notice: keys are in the browser, not barkd. Malware or XSS while unlocked can act without another hardware tap beyond what the client enforces.
 
-## Signet endpoints
+Practical implications:
 
-The app connects to Ark signet over HTTPS (`ark.signet.2nd.dev`, `esplora.signet.2nd.dev`). CSP `connect-src` is widened only in SDK mode.
+- There is no local `:3535` daemon for other local processes to call.
+- Browser compromise while the wallet is unlocked is higher impact than in barkd mode.
+- Client-side WebAuthn is a local UX/security gate, not a server-verified authorization layer.
+- Browser extensions, injected scripts, and compromised profiles are in scope for the SDK threat model.
+- Use a dedicated browser profile for serious testing.
 
 ## When to use SDK mode
 
 - Demos, hackathons, or machines where installing barkd is impractical.
 - Experimenting with Ark in the browser.
+- Browser-first product prototypes where a local daemon is unacceptable.
+- Test environments where the risk of browser-held signet funds is acceptable.
 
 For day-to-day desktop use with stronger isolation, use **barkd mode** ([Getting started](getting-started.md)).
+
+## Troubleshooting
+
+| Symptom | Check |
+|---------|-------|
+| App still asks to start barkd | Confirm `.env.local` has `NEXT_PUBLIC_WALLET_BACKEND=sdk`, then restart `npm run dev`. |
+| SDK fails to load | Run `npm install`; confirm `@secondts/bark` exists in `node_modules`. |
+| WebAuthn or passkey fails | Use one origin consistently (`http://127.0.0.1:3000` recommended) and try Chrome, Safari, or Edge. |
+| No balance after funding | Tap sync/refresh, then wait for the Ark server and signet chain source to catch up. |
+| Production process exits | Set `ALLOW_SDK_IN_PRODUCTION=true` intentionally, or run barkd mode. |

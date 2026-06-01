@@ -7,7 +7,7 @@ Ark BTC Wallet is a **Next.js 15** app with two entry UIs (`src/app/page.tsx`):
 | Mode | UI | Chain access |
 |------|-----|----------------|
 | `barkd` (default) | `WalletApp` | Next.js API → barkd REST → Ark signet |
-| `sdk` | `SdkWalletApp` | Bark WASM in browser → Ark signet HTTPS |
+| `sdk` | `SdkWalletApp` | `@secondts/bark` WASM in browser → Ark signet HTTPS |
 
 Both support Ark-only addresses (`ark1…`), signet, Pay / Request / activity feed.
 
@@ -72,18 +72,34 @@ sha256(body) base64
 
 Headers: `x-wallet-signature`, `x-wallet-public-key`, `x-wallet-timestamp`, `x-wallet-nonce`, `x-wallet-body-hash`.
 
-## SDK mode — request path
+## SDK mode — barkd-free request path
 
 ```
 Browser tab
   SdkWalletApp → useSdkWalletStore
   IndexedDB: mnemonic vault (passphrase or PRF+HKDF) + optional passkey record
-  Bark WASM wallet handle (sync, balance, send, refresh)
+  @secondts/bark WASM wallet handle (sync, balance, send, refresh)
        │
        └── HTTPS → ark.signet.2nd.dev / esplora.signet.2nd.dev
 ```
 
 No Next.js wallet API in SDK mode; WebAuthn and pending-op checks are **client-only**.
+
+### What "no barkd" means
+
+SDK mode removes the local `barkd` process and the `127.0.0.1:3535` HTTP trust boundary. The Next.js app still serves the React UI, applies CSP and middleware, and hosts non-wallet routes, but wallet operations are performed by the browser SDK.
+
+It does **not** remove the need for networked Ark infrastructure. The browser still reaches the Ark server and esplora over HTTPS. In the default signet config those endpoints are `ark.signet.2nd.dev` and `esplora.signet.2nd.dev`.
+
+### SDK storage model
+
+| Data | Location |
+|------|----------|
+| Mnemonic vault | Browser IndexedDB |
+| Passkey PRF record | Browser IndexedDB |
+| Recovery passphrase backup | Browser IndexedDB |
+| Active wallet handle | In-memory module state, outside Zustand |
+| Server `.ark-wallet-data` wallet auth | Not used for SDK wallet operations |
 
 ## Key source files
 

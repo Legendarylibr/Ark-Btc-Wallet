@@ -2,7 +2,7 @@
 
 A local, Cash App–style wallet for **Ark-only signet** payments. Send and receive using `ark1…` addresses with instant settlement on the [2nd signet](https://signet.2nd.dev/) network.
 
-**Who is this for?** Developers and testers who want a simple UI on top of [barkd](https://second.tech/docs/barkd) (recommended), or an experimental in-browser wallet via [Bark WASM](https://gitlab.com/ark-bitcoin/bark-ffi-bindings/-/tree/wasm).
+**Who is this for?** Developers and testers who want a simple UI on top of [barkd](https://second.tech/docs/barkd) (recommended), or a barkd-free in-browser wallet via Second's [`@secondts/bark`](https://www.npmjs.com/package/@secondts/bark) WASM SDK.
 
 [![CI](https://github.com/Legendarylibr/Ark-Btc-Wallet/actions/workflows/ci.yml/badge.svg)](https://github.com/Legendarylibr/Ark-Btc-Wallet/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -12,7 +12,7 @@ A local, Cash App–style wallet for **Ark-only signet** payments. Send and rece
 ## What you get
 
 - **Pay & Request** — send signet sats to any `ark1…` address; show a receive address for incoming payments
-- **Live balance & history** — auto-sync with barkd; activity list in the UI
+- **Live balance & history** — auto-sync through barkd or the browser SDK; activity list in the UI
 - **Secure** — refresh received VTXOs after someone pays you (recommended after incoming funds)
 - **Strong local security (barkd mode)** — passphrase + security key (Touch ID, Windows Hello, YubiKey) + signed API on loopback only
 - **No cloud account** — runs on your machine at `http://127.0.0.1:3000`; keys stay in barkd unless you enable SDK mode
@@ -23,14 +23,16 @@ A local, Cash App–style wallet for **Ark-only signet** payments. Send and rece
 
 ## How it works (two modes)
 
-| | **barkd (default, recommended)** | **SDK (experimental)** |
+| | **barkd (default, recommended)** | **SDK (barkd-free browser wallet)** |
 |---|----------------------------------|----------------------|
 | Where keys live | **barkd** on your computer (`127.0.0.1:3535`) | Browser (WASM + encrypted storage) |
 | Recovery phrase in UI? | **No** — created only in `bark create` | Yes (shown once at setup; back it up) |
 | Security key | Verified on the **server** | Verified in the **browser** only |
-| Best for | Day-to-day signet testing with real barkd | Trying WASM without installing barkd |
+| Local daemon required? | Yes, `barkd` | No |
+| Still needs hosted services? | Ark server + esplora | Ark server + esplora |
+| Best for | Day-to-day signet testing with stronger local isolation | Demos, browser-first testing, machines where installing barkd is impractical |
 
-Use **barkd mode** unless you have a specific reason to use SDK. SDK has a different trust model — read [SECURITY.md](SECURITY.md) before using it.
+Use **barkd mode** when you want stronger local isolation. Use **SDK mode** when the priority is a no-daemon browser wallet. SDK has a different trust model — read [SECURITY.md](SECURITY.md) before using it.
 
 ---
 
@@ -39,7 +41,7 @@ Use **barkd mode** unless you have a specific reason to use SDK. SDK has a diffe
 | Requirement | Notes |
 |-------------|--------|
 | **Node.js 20+** | [nodejs.org](https://nodejs.org) — for the wallet UI |
-| **Bark CLI + barkd** | [Install guide](https://second.tech/docs/barkd/install) — holds your signet wallet |
+| **Bark CLI + barkd** | Required for barkd mode only. [Install guide](https://second.tech/docs/barkd/install) |
 | **Modern browser** | Chrome, Firefox, Edge, or Safari — for WebAuthn |
 | **Security key (optional)** | Touch ID, Windows Hello, or a FIDO2 key (e.g. YubiKey) |
 
@@ -156,15 +158,17 @@ More detail: [docs/platforms.md](docs/platforms.md)
 
 ---
 
-## SDK mode (no barkd)
+## SDK mode (barkd-free)
 
-For a browser-only wallet (mnemonic in the app, passkey unlock):
+For a browser-only wallet where the app runs Bark through `@secondts/bark` WASM:
 
 1. Install dependencies: `npm install` includes Second's browser Bark SDK (`@secondts/bark`).
 2. In `.env.local` set `NEXT_PUBLIC_WALLET_BACKEND=sdk`.
 3. Restart `npm run dev`.
 
-Treat SDK as **experimental** — not a drop-in replacement for barkd security.
+No local `barkd` process is required. The browser still connects to Second's signet Ark server and esplora endpoints. Back up the mnemonic shown during SDK wallet creation; it is the recovery material for this mode.
+
+Treat SDK as a **different trust model** — not a drop-in replacement for barkd security. Full guide: [docs/sdk-mode.md](docs/sdk-mode.md).
 
 ---
 
@@ -197,7 +201,7 @@ Full list: [docs/troubleshooting.md](docs/troubleshooting.md)
 |-----|-----------------|
 | [docs/getting-started.md](docs/getting-started.md) | Full barkd walkthrough, Pay / Secure details |
 | [docs/platforms.md](docs/platforms.md) | OS-specific tips, WebAuthn, WSL |
-| [docs/sdk-mode.md](docs/sdk-mode.md) | WASM build and passkey wallet |
+| [docs/sdk-mode.md](docs/sdk-mode.md) | Barkd-free browser wallet, passkeys, recovery passphrase |
 | [docs/configuration.md](docs/configuration.md) | All environment variables |
 | [docs/architecture.md](docs/architecture.md) | How signing and backends fit together |
 | [docs/troubleshooting.md](docs/troubleshooting.md) | Errors and fixes |
